@@ -20,6 +20,26 @@ function aesir_gtranslate_default_lang_codes() {
 }
 
 /**
+ * Language code to flag emoji (for GTranslate-style UI).
+ *
+ * @return array<string, string>
+ */
+function aesir_language_flag_emojis() {
+	return array(
+		'en' => '🇬🇧', 'ar' => '🇸🇦', 'zh-CN' => '🇨🇳', 'zh-TW' => '🇹🇼', 'nl' => '🇳🇱', 'fr' => '🇫🇷',
+		'de' => '🇩🇪', 'it' => '🇮🇹', 'ja' => '🇯🇵', 'ko' => '🇰🇷', 'pt' => '🇵🇹', 'ru' => '🇷🇺',
+		'es' => '🇪🇸', 'th' => '🇹🇭', 'vi' => '🇻🇳', 'af' => '🇿🇦', 'sq' => '🇦🇱', 'hy' => '🇦🇲',
+		'az' => '🇦🇿', 'eu' => '🇪🇸', 'be' => '🇧🇾', 'bg' => '🇧🇬', 'ca' => '🇪🇸', 'hr' => '🇭🇷',
+		'cs' => '🇨🇿', 'da' => '🇩🇰', 'et' => '🇪🇪', 'tl' => '🇵🇭', 'fi' => '🇫🇮', 'gl' => '🇪🇸',
+		'el' => '🇬🇷', 'ht' => '🇭🇹', 'iw' => '🇮🇱', 'hi' => '🇮🇳', 'hu' => '🇭🇺', 'is' => '🇮🇸',
+		'id' => '🇮🇩', 'ga' => '🇮🇪', 'lv' => '🇱🇻', 'lt' => '🇱🇹', 'mk' => '🇲🇰', 'ms' => '🇲🇾',
+		'mt' => '🇲🇹', 'no' => '🇳🇴', 'fa' => '🇮🇷', 'pl' => '🇵🇱', 'ro' => '🇷🇴', 'sr' => '🇷🇸',
+		'sk' => '🇸🇰', 'sl' => '🇸🇮', 'sw' => '🇹🇿', 'sv' => '🇸🇪', 'tr' => '🇹🇷', 'uk' => '🇺🇦',
+		'ur' => '🇵🇰', 'cy' => '🇬🇧', 'yi' => '🇮🇱', 'ka' => '🇬🇪',
+	);
+}
+
+/**
  * GTranslate language code to name map (matches plugin dropdown languages).
  *
  * @return array<string, string>
@@ -237,32 +257,55 @@ function aesir_language_switcher() {
 	$id          = 'aesir-language-switcher';
 	$is_gt       = ( $provider === 'gtranslate' );
 	$default_gt  = $is_gt && ( $gt = get_option( 'GTranslate' ) ) && is_array( $gt ) && isset( $gt['default_language'] ) ? $gt['default_language'] : 'en';
-	// When GTranslate has few options, try to populate from widget on page (bottom switcher)
 	$populate_from_dom = $is_gt && $count < 5;
-	?>
-	<div class="aesir-language-switcher-wrap inline-flex items-center">
-		<label for="<?php echo esc_attr( $id ); ?>" class="sr-only"><?php esc_html_e( 'Language', 'aesir' ); ?></label>
-		<select id="<?php echo esc_attr( $id ); ?>"
-			class="aesir-language-switcher border border-black bg-white text-black text-sm py-1 pl-2 pr-6 max-w-[140px] cursor-pointer appearance-none focus:outline-none focus:ring-1 focus:ring-black<?php echo $is_gt ? ' aesir-language-switcher--gt' : ''; ?>"
-			aria-label="<?php esc_attr_e( 'Select language', 'aesir' ); ?>"
-			data-current-url="<?php echo esc_attr( $current_url ); ?>"
-			<?php if ( $is_gt ) : ?>
-				data-provider="gtranslate"
-				data-default-lang="<?php echo esc_attr( $default_gt ); ?>"
-				<?php if ( $populate_from_dom ) : ?>data-populate-from-dom="1"<?php endif; ?>
-			<?php endif; ?>>
-			<?php foreach ( $languages as $lang ) : ?>
-				<option value="<?php echo esc_attr( $lang['url'] ); ?>" <?php selected( ! empty( $lang['active'] ) ); ?>>
-					<?php echo esc_html( $lang['name'] ); ?>
-				</option>
-			<?php endforeach; ?>
-		</select>
-	</div>
-	<?php
+	$flags       = $is_gt ? aesir_language_flag_emojis() : array();
+
+	if ( $is_gt ) :
+		// GTranslate: custom dropdown with flags (matches bottom widget UI)
+		?>
+		<div class="aesir-language-switcher-wrap aesir-ls" id="aesir-ls-wrap" data-provider="gtranslate" data-default-lang="<?php echo esc_attr( $default_gt ); ?>" <?php echo $populate_from_dom ? ' data-populate-from-dom="1"' : ''; ?>>
+			<button type="button" class="aesir-ls__current" id="aesir-ls-current" aria-haspopup="listbox" aria-expanded="false" aria-label="<?php esc_attr_e( 'Select language', 'aesir' ); ?>">
+				<span class="aesir-ls__flag" id="aesir-ls-flag" aria-hidden="true"><?php echo isset( $flags[ $default_gt ] ) ? esc_html( $flags[ $default_gt ] ) : '🌐'; ?></span>
+				<span class="aesir-ls__label" id="aesir-ls-label"><?php echo esc_html( isset( $languages[0] ) ? $languages[0]['name'] : 'English' ); ?></span>
+				<span class="aesir-ls__chevron" aria-hidden="true">▼</span>
+			</button>
+			<ul class="aesir-ls__list" id="aesir-ls-list" role="listbox" hidden>
+				<?php foreach ( $languages as $lang ) :
+					$flag = isset( $flags[ $lang['code'] ] ) ? $flags[ $lang['code'] ] : '🌐';
+				?>
+					<li class="aesir-ls__option" role="option" tabindex="-1" data-value="<?php echo esc_attr( $lang['url'] ); ?>" data-code="<?php echo esc_attr( $lang['code'] ); ?>">
+						<span class="aesir-ls__option-flag" aria-hidden="true"><?php echo esc_html( $flag ); ?></span>
+						<span class="aesir-ls__option-label"><?php echo esc_html( $lang['name'] ); ?></span>
+					</li>
+				<?php endforeach; ?>
+			</ul>
+			<select id="<?php echo esc_attr( $id ); ?>" class="aesir-ls__native" aria-hidden="true" tabindex="-1" data-current-url="<?php echo esc_attr( $current_url ); ?>">
+				<?php foreach ( $languages as $lang ) : ?>
+					<option value="<?php echo esc_attr( $lang['url'] ); ?>"><?php echo esc_html( $lang['name'] ); ?></option>
+				<?php endforeach; ?>
+			</select>
+		</div>
+		<?php
+	else :
+		// WPML / Polylang: native select
+		?>
+		<div class="aesir-language-switcher-wrap inline-flex items-center">
+			<label for="<?php echo esc_attr( $id ); ?>" class="sr-only"><?php esc_html_e( 'Language', 'aesir' ); ?></label>
+			<select id="<?php echo esc_attr( $id ); ?>"
+				class="aesir-language-switcher border border-black bg-white text-black text-sm py-1 pl-2 pr-6 max-w-[140px] cursor-pointer appearance-none focus:outline-none focus:ring-1 focus:ring-black"
+				aria-label="<?php esc_attr_e( 'Select language', 'aesir' ); ?>"
+				data-current-url="<?php echo esc_attr( $current_url ); ?>">
+				<?php foreach ( $languages as $lang ) : ?>
+					<option value="<?php echo esc_url( $lang['url'] ); ?>" <?php selected( ! empty( $lang['active'] ) ); ?>><?php echo esc_html( $lang['name'] ); ?></option>
+				<?php endforeach; ?>
+			</select>
+		</div>
+		<?php
+	endif;
 }
 
 /**
- * Enqueue inline script for language switcher (redirect or GTranslate cookie/doGTranslate).
+ * Enqueue inline script for language switcher (redirect or GTranslate cookie + reload).
  */
 function aesir_language_switcher_script() {
 	$languages = aesir_get_available_languages();
@@ -272,14 +315,10 @@ function aesir_language_switcher_script() {
 	if ( ! $run ) {
 		return;
 	}
+	$is_gt = ( $provider === 'gtranslate' );
 	?>
 	<script>
 	(function() {
-		var sel = document.getElementById('aesir-language-switcher');
-		if (!sel) return;
-		var provider = sel.getAttribute('data-provider');
-		var populateFromDom = sel.getAttribute('data-populate-from-dom') === '1';
-
 		function gtGetCookie(name) {
 			var c = document.cookie.split(';');
 			for (var i = 0; i < c.length; i++) {
@@ -288,83 +327,78 @@ function aesir_language_switcher_script() {
 			}
 			return '';
 		}
-
-		function tryPopulateFromDom() {
-			if (sel.getAttribute('data-provider') !== 'gtranslate') return false;
-			var allSelects = document.querySelectorAll('select');
-			for (var i = 0; i < allSelects.length; i++) {
-				var s = allSelects[i];
-				if (s.id === 'aesir-language-switcher') continue;
-				var optsWithPair = [];
-				for (var j = 0; j < s.options.length; j++) {
-					if (s.options[j].value && s.options[j].value.indexOf('|') !== -1)
-						optsWithPair.push(s.options[j]);
-				}
-				if (optsWithPair.length >= 2) {
-					sel.innerHTML = '';
-					for (j = 0; j < s.options.length; j++) {
-						var opt = s.options[j];
-						if (!opt.value) continue;
-						var o = document.createElement('option');
-						o.value = opt.value;
-						o.textContent = (opt.textContent || opt.innerText || '').trim();
-						sel.appendChild(o);
-					}
-					var firstVal = sel.options[0] && sel.options[0].value;
-					if (firstVal && firstVal.indexOf('|') !== -1)
-						sel.setAttribute('data-default-lang', firstVal.split('|')[0]);
-					return true;
-				}
+		function gtSetCookie(from, to) {
+			if (to === from || !to) {
+				document.cookie = 'googtrans=; path=/; max-age=0';
+			} else {
+				document.cookie = 'googtrans=/' + from + '/' + to + '; path=/; max-age=31536000; SameSite=Lax';
 			}
-			return false;
+		}
+		function gtApplyLanguage(langPair) {
+			if (!langPair) return;
+			var parts = langPair.split('|');
+			var from = parts[0] || 'en';
+			var to = parts[1] || from;
+			gtSetCookie(from, to);
+			if (typeof doGTranslate === 'function') {
+				try { doGTranslate(langPair); } catch (e) {}
+			}
+			location.reload();
 		}
 
-		function applyGtSelection() {
-			var defaultLang = sel.getAttribute('data-default-lang') || 'en';
+		var wrap = document.getElementById('aesir-ls-wrap');
+		if (wrap && wrap.getAttribute('data-provider') === 'gtranslate') {
+			var currentBtn = document.getElementById('aesir-ls-current');
+			var list = document.getElementById('aesir-ls-list');
+			var flagEl = document.getElementById('aesir-ls-flag');
+			var labelEl = document.getElementById('aesir-ls-label');
+			var sel = document.getElementById('aesir-language-switcher');
+			var defaultLang = wrap.getAttribute('data-default-lang') || 'en';
 			var googtrans = gtGetCookie('googtrans');
-			var pair = defaultLang + '|' + defaultLang;
+			var currentCode = defaultLang;
 			if (googtrans) {
-				var parts = googtrans.split('/').filter(Boolean);
-				if (parts.length >= 2) {
-					pair = defaultLang + '|' + parts[1];
+				var segs = googtrans.split('/').filter(Boolean);
+				if (segs.length >= 2) currentCode = segs[1];
+			}
+			var pair = defaultLang + '|' + currentCode;
+			var options = list ? list.querySelectorAll('.aesir-ls__option') : [];
+			for (var i = 0; i < options.length; i++) {
+				if (options[i].getAttribute('data-value') === pair) {
+					if (flagEl) flagEl.textContent = options[i].querySelector('.aesir-ls__option-flag').textContent;
+					if (labelEl) labelEl.textContent = options[i].querySelector('.aesir-ls__option-label').textContent;
+					if (sel) { sel.value = pair; sel.selectedIndex = i; }
+					break;
 				}
 			}
-			for (var j = 0; j < sel.options.length; j++) {
-				if (sel.options[j].value === pair) { sel.selectedIndex = j; return; }
-			}
+			currentBtn.addEventListener('click', function(e) {
+				e.stopPropagation();
+				var open = list.getAttribute('hidden') === null;
+				if (open) { list.setAttribute('hidden', ''); currentBtn.setAttribute('aria-expanded', 'false'); }
+				else { list.removeAttribute('hidden'); currentBtn.setAttribute('aria-expanded', 'true'); }
+			});
+			document.addEventListener('click', function() {
+				list.setAttribute('hidden', '');
+				currentBtn.setAttribute('aria-expanded', 'false');
+			});
+			list.addEventListener('click', function(e) {
+				e.stopPropagation();
+				var opt = e.target.closest('.aesir-ls__option');
+				if (!opt) return;
+				var val = opt.getAttribute('data-value');
+				if (!val) return;
+				list.setAttribute('hidden', '');
+				currentBtn.setAttribute('aria-expanded', 'false');
+				gtApplyLanguage(val);
+			});
+			return;
 		}
 
-		if (populateFromDom && provider === 'gtranslate') {
-			if (tryPopulateFromDom()) applyGtSelection();
-			setTimeout(function() { if (tryPopulateFromDom()) applyGtSelection(); }, 400);
-			setTimeout(function() { if (tryPopulateFromDom()) applyGtSelection(); }, 1200);
-		}
-
-		if (provider === 'gtranslate') {
-			applyGtSelection();
-			var defaultLang = sel.getAttribute('data-default-lang') || 'en';
-			sel.addEventListener('change', function() {
-				var langPair = this.value;
-				if (!langPair) return;
-				if (typeof doGTranslate === 'function') {
-					doGTranslate(langPair);
-					return;
-				}
-				var parts = langPair.split('|');
-				var to = parts[1] || defaultLang;
-				if (to === defaultLang) {
-					document.cookie = 'googtrans=; path=/; max-age=0';
-				} else {
-					document.cookie = 'googtrans=/' + defaultLang + '/' + to + '; path=/; max-age=31536000';
-				}
-				location.reload();
-			});
-		} else {
-			sel.addEventListener('change', function() {
-				var url = this.value;
-				if (url) window.location.href = url;
-			});
-		}
+		var sel = document.getElementById('aesir-language-switcher');
+		if (!sel) return;
+		sel.addEventListener('change', function() {
+			var url = this.value;
+			if (url) window.location.href = url;
+		});
 	})();
 	</script>
 	<?php
