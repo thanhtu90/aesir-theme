@@ -28,9 +28,13 @@
                 $('.footer-content').show();
                 $('.footer-title .arrow').html(arrowDown);
                 $('#menu-mobile').addClass('hidden');
+                // Ensure desktop nav shows all submenus
+                $('#menu-mobile .sub-menu').show();
             } else {
                 $('.footer-content').hide();
                 $('#menu-side').addClass('hidden');
+                // Prepare mobile menu structure when in mobile view
+                prepareMobileMenu();
             }
         }
 
@@ -79,12 +83,58 @@
         // ============================================================
         // Mobile Menu
         // ============================================================
+        function prepareMobileMenu() {
+            var $menu = $('#menu-mobile');
+            if (!$menu.length) return;
+
+            $menu.find('li.menu-item-has-children').each(function() {
+                var $li = $(this);
+                var $submenu = $li.children('.sub-menu');
+                if (!$submenu.length) return;
+
+                if ($li.data('mobileSubmenuPrepared')) {
+                    // Ensure collapsed by default on mobile
+                    $submenu.hide();
+                    return;
+                }
+
+                $li.data('mobileSubmenuPrepared', true);
+
+                var $toggle = $('<button type="button" class="mobile-submenu-toggle" aria-expanded="false" aria-label="Toggle submenu"><span class="mobile-submenu-toggle-icon">+</span></button>');
+                var $link = $li.children('a').first();
+
+                if ($link.length) {
+                    $link.after($toggle);
+                } else {
+                    $li.prepend($toggle);
+                }
+
+                $submenu.hide();
+            });
+        }
+
         $('#menu-mobile-btn').on('click', function() {
             $('#menu-mobile').toggleClass('hidden');
+            if (window.innerWidth < 1024) {
+                prepareMobileMenu();
+            }
         });
 
         $('#menu-mobile-close-btn').on('click', function() {
             $('#menu-mobile').addClass('hidden');
+        });
+
+        // Mobile submenu toggle (expand / collapse on click with animation)
+        $(document).on('click', '.mobile-submenu-toggle', function(e) {
+            e.preventDefault();
+            var $btn = $(this);
+            var $li = $btn.closest('li');
+            var $submenu = $li.children('.sub-menu');
+            if (!$submenu.length) return;
+
+            $submenu.slideToggle(200);
+            var isExpanded = $btn.attr('aria-expanded') === 'true';
+            $btn.attr('aria-expanded', isExpanded ? 'false' : 'true');
         });
 
         // ============================================================
