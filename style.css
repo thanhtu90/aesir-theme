@@ -343,6 +343,13 @@ Version: 1
   display: none !important;
 }
 
+/* Hide floating bottom cart icon and bottom language switcher */
+.xoo-wsc-basket,
+#gt_float_wrapper,
+.gt_switcher_wrapper {
+  display: none !important;
+}
+
 /* Header language switcher - dropdown and GTranslate-style */
 .aesir-language-switcher-wrap {
   margin-left: 0.5rem;
