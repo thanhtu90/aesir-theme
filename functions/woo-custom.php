@@ -371,7 +371,7 @@ add_action( 'init', function() {
     remove_action( 'woocommerce_after_single_product_summary', 'woocommerce_output_related_products', 20 );
 
     // Re-add with Related products first.
-    add_action( 'woocommerce_after_single_product_summary', 'woocommerce_output_related_products', 5 );
-    add_action( 'woocommerce_after_single_product_summary', 'woocommerce_output_product_data_tabs', 10 );
+    add_action( 'woocommerce_after_single_product_summary', 'woocommerce_output_product_data_tabs', 5 );
+    add_action( 'woocommerce_after_single_product_summary', 'woocommerce_output_related_products', 10 );
     add_action( 'woocommerce_after_single_product_summary', 'woocommerce_upsell_display', 15 );
 }, 20 );
