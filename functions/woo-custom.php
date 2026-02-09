@@ -349,3 +349,29 @@ function aesir_render_cart_cross_sells() {
 
 // Render below cart items but before totals/collaterals.
 add_action( 'woocommerce_after_cart_table', 'aesir_render_cart_cross_sells', 15 );
+
+// ============================================================
+// RELATED PRODUCTS POSITION (PDP)
+// ============================================================
+
+/**
+ * Move the core \"Related products\" block to be the first section rendered
+ * under the single product summary on the right, ahead of tabs/upsells/previously
+ * purchased, while preserving standard WooCommerce selection logic.
+ */
+add_action( 'init', function() {
+    // Ensure WooCommerce functions are available.
+    if ( ! function_exists( 'woocommerce_output_related_products' ) ) {
+        return;
+    }
+
+    // Remove default hook ordering.
+    remove_action( 'woocommerce_after_single_product_summary', 'woocommerce_output_product_data_tabs', 10 );
+    remove_action( 'woocommerce_after_single_product_summary', 'woocommerce_upsell_display', 15 );
+    remove_action( 'woocommerce_after_single_product_summary', 'woocommerce_output_related_products', 20 );
+
+    // Re-add with Related products first.
+    add_action( 'woocommerce_after_single_product_summary', 'woocommerce_output_related_products', 5 );
+    add_action( 'woocommerce_after_single_product_summary', 'woocommerce_output_product_data_tabs', 10 );
+    add_action( 'woocommerce_after_single_product_summary', 'woocommerce_upsell_display', 15 );
+}, 20 );

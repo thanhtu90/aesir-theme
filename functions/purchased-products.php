@@ -8,7 +8,8 @@
  * - Cache invalidated when user places new order
  */
 
-add_action('woocommerce_after_single_product_summary', 'show_user_purchased_products', 5);
+// Render \"Previously Purchased Products\" after core sections (tabs, upsells, related).
+add_action('woocommerce_after_single_product_summary', 'show_user_purchased_products', 25);
 
 function show_user_purchased_products() {
     if (!is_user_logged_in()) return;
