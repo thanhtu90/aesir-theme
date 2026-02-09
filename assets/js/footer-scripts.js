@@ -88,10 +88,10 @@
         });
 
         // ============================================================
-        // Header cart: open right sidebar popup (same as bottom cart)
+        // Header cart: open right sidebar popup (same as .xoo-wsc-basket)
         // ============================================================
         $(document).on('click', '.aesir-open-side-cart', function(e) {
-            var $sideCartTrigger = $('.xoo-wsc-ct-btn, .xoo-wsc-cart-trigger, [data-xoo-wsc-trigger], .xoo-wsc-ct').first();
+            var $sideCartTrigger = $('.xoo-wsc-basket').first();
             if ($sideCartTrigger.length) {
                 e.preventDefault();
                 $sideCartTrigger[0].click();

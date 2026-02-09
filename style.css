@@ -308,7 +308,7 @@ Version: 1
   font-size: 18px;
 }
 
-/* Header cart badge: sit at top-right of icon */
+/* Header cart badge: circle at top-right of icon */
 .header-cart-icon-wrap {
   position: relative;
 }
@@ -316,6 +316,23 @@ Version: 1
   position: absolute;
   top: -4px;
   right: -4px;
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  border-radius: 50%;
+  background-color: #000;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  box-sizing: border-box;
+}
+.header-cart-icon-wrap .header-cart-count.hidden {
+  display: none;
 }
 
 /* Side cart */
