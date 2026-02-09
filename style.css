@@ -474,3 +474,15 @@ Version: 1
 #menu .aesir-ls {
   margin-left: 0.25rem;
 }
+
+/* Category product card – move wishlist (heart) icon up near top-right */
+.products li.product {
+  position: relative;
+}
+.products li.product [class*="wishlist"] {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  bottom: auto !important;
+  z-index: 5;
+}
