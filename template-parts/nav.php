@@ -26,15 +26,6 @@
                 <?php endif; ?>
             </ul>
             <?php if ( function_exists( 'aesir_language_switcher' ) ) { aesir_language_switcher(); } ?>
-            <?php if ( function_exists( 'aesir_get_wishlist_url' ) ) : ?>
-                <a href="<?php echo esc_url( aesir_get_wishlist_url() ); ?>" class="header-wishlist-link relative inline-flex items-center justify-center p-2 text-black no-underline hover:opacity-70 transition-opacity" aria-label="<?php esc_attr_e( 'View wishlist', 'aesir' ); ?>">
-                    <span class="header-wishlist-icon-wrap relative inline-flex shrink-0">
-                        <svg class="w-5 h-5 md:w-6 md:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
-                            <path d="M12.1 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.65 11.54l-1.25 1.31z"/>
-                        </svg>
-                    </span>
-                </a>
-            <?php endif; ?>
             <?php if ( function_exists( 'wc_get_cart_url' ) && function_exists( 'WC' ) && WC()->cart ) : ?>
                 <a href="<?php echo esc_url( wc_get_cart_url() ); ?>" class="header-cart-link aesir-open-side-cart relative inline-flex items-center justify-center p-2 text-black no-underline hover:opacity-70 transition-opacity" aria-label="<?php esc_attr_e( 'View cart', 'aesir' ); ?>">
                     <span class="header-cart-icon-wrap relative inline-flex shrink-0">
