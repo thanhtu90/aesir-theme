@@ -97,26 +97,57 @@ function aesir_get_available_languages() {
 		return $languages;
 	}
 
-	// GTranslate: dropdown languages from plugin settings
+	// GTranslate: from plugin settings (incl_langs) or by parsing widget_code
 	$gt_data = get_option( 'GTranslate' );
 	if ( is_array( $gt_data ) && ! empty( $gt_data['widget_code'] ) ) {
 		$default = isset( $gt_data['default_language'] ) ? $gt_data['default_language'] : 'en';
-		$incl    = isset( $gt_data['incl_langs'] ) ? $gt_data['incl_langs'] : array();
+		$names   = aesir_gtranslate_language_names();
+		$pairs   = array(); // list of [ 'value' => 'en|es', 'name' => 'Spanish' ]
+
+		// Prefer incl_langs from options (same list as in Settings)
+		$incl = isset( $gt_data['incl_langs'] ) ? $gt_data['incl_langs'] : array();
 		if ( is_string( $incl ) ) {
 			$incl = array_filter( array_map( 'trim', explode( ',', $incl ) ) );
 		} elseif ( ! is_array( $incl ) ) {
 			$incl = array();
 		}
-		$names = aesir_gtranslate_language_names();
-		// Include default language as first option
-		$codes = array_unique( array_merge( array( $default ), $incl ) );
-		foreach ( $codes as $code ) {
-			$name = isset( $names[ $code ] ) ? $names[ $code ] : $code;
+		if ( ! empty( $incl ) ) {
+			$codes = array_unique( array_merge( array( $default ), $incl ) );
+			foreach ( $codes as $code ) {
+				$pairs[] = array(
+					'value' => $default . '|' . $code,
+					'name'  => isset( $names[ $code ] ) ? $names[ $code ] : $code,
+				);
+			}
+		} else {
+			// Fallback: parse widget_code for <option value="default|code">Name</option> (same as bottom widget)
+			$code = $gt_data['widget_code'];
+			// Match double- or single-quoted value with a pipe (lang pair)
+			if ( preg_match_all( '#<option\s+value=(["\'])([^"\']*\|[^"\']+)\1[^>]*>([^<]+)</option>#', $code, $m, PREG_SET_ORDER ) ) {
+				foreach ( $m as $match ) {
+					if ( isset( $match[2] ) && $match[2] !== '' ) {
+						$pairs[] = array(
+							'value' => $match[2],
+							'name'  => trim( $match[3] ),
+						);
+					}
+				}
+			}
+			// If no options with lang pair found, ensure default is available
+			if ( empty( $pairs ) ) {
+				$pairs[] = array(
+					'value' => $default . '|' . $default,
+					'name'  => isset( $names[ $default ] ) ? $names[ $default ] : $default,
+				);
+			}
+		}
+
+		foreach ( $pairs as $p ) {
 			$languages[] = array(
-				'url'    => $default . '|' . $code, // lang_pair for doGTranslate / cookie
-				'name'   => $name,
-				'code'   => $code,
-				'active' => false, // GTranslate: current lang detected in JS from cookie
+				'url'    => $p['value'],
+				'name'   => $p['name'],
+				'code'   => substr( strrchr( $p['value'], '|' ), 1 ),
+				'active' => false,
 			);
 		}
 		return $languages;
