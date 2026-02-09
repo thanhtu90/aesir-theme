@@ -254,3 +254,84 @@ add_filter('woocommerce_email_headers', function($headers, $email_id, $order) {
     }
     return $headers;
 }, 10, 3);
+
+// ============================================================
+// CART PAGE CROSS-SELL SECTION
+// ============================================================
+
+/**
+ * Render \"Complete the outfit with…\" cross-sell section on the cart page.
+ *
+ * - Uses WooCommerce cross-sell relationships when present.
+ * - Falls back to related products from the same categories as items in the cart.
+ * - Products can be added directly from the cart page (standard AJAX add-to-cart).
+ */
+function aesir_render_cart_cross_sells() {
+    if ( ! function_exists( 'WC' ) || ! is_cart() || ! WC()->cart || WC()->cart->is_empty() ) {
+        return;
+    }
+
+    $cart        = WC()->cart;
+    $cross_sells = $cart->get_cross_sells();
+
+    // Fallback: if no manual cross-sells, use related products based on cart items.
+    if ( empty( $cross_sells ) ) {
+        $cart_product_ids = array();
+
+        foreach ( $cart->get_cart() as $item ) {
+            if ( ! empty( $item['product_id'] ) ) {
+                $cart_product_ids[] = (int) $item['product_id'];
+            }
+        }
+
+        $cart_product_ids = array_unique( array_filter( $cart_product_ids ) );
+
+        if ( ! empty( $cart_product_ids ) ) {
+            // Use WooCommerce helper to get related products from same categories/tags.
+            $related = wc_get_related_products( $cart_product_ids, 4, $cart_product_ids );
+            $cross_sells = ! empty( $related ) ? $related : $cross_sells;
+        }
+    }
+
+    $cross_sells = apply_filters( 'aesir_cart_cross_sells_ids', array_unique( array_filter( $cross_sells ) ) );
+
+    if ( empty( $cross_sells ) ) {
+        return;
+    }
+
+    $args = array(
+        'post_type'           => 'product',
+        'post_status'         => 'publish',
+        'ignore_sticky_posts' => 1,
+        'no_found_rows'       => true,
+        'posts_per_page'      => 4,
+        'post__in'            => $cross_sells,
+        'orderby'             => 'post__in',
+    );
+
+    $products = new WP_Query( $args );
+
+    if ( ! $products->have_posts() ) {
+        wp_reset_postdata();
+        return;
+    }
+
+    echo '<section class="aesir-cart-cross-sells cart-cross-sells">';
+    echo '<h2 class="title aesir-cart-cross-sells__title">' . esc_html__( 'Complete the outfit with…', 'aesir' ) . '</h2>';
+
+    woocommerce_product_loop_start();
+
+    while ( $products->have_posts() ) {
+        $products->the_post();
+        wc_get_template_part( 'content', 'product' );
+    }
+
+    woocommerce_product_loop_end();
+
+    echo '</section>';
+
+    wp_reset_postdata();
+}
+
+// Render below cart items but before totals/collaterals.
+add_action( 'woocommerce_after_cart_table', 'aesir_render_cart_cross_sells', 15 );
