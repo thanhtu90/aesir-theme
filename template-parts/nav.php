@@ -25,6 +25,7 @@
                     <li><a href="<?php echo bloginfo('url'); ?>/my-account">Login</a></li>
                 <?php endif; ?>
             </ul>
+            <?php if ( function_exists( 'aesir_language_switcher' ) ) { aesir_language_switcher(); } ?>
             <?php if ( function_exists( 'wc_get_cart_url' ) && function_exists( 'WC' ) && WC()->cart ) : ?>
                 <a href="<?php echo esc_url( wc_get_cart_url() ); ?>" class="header-cart-link aesir-open-side-cart relative inline-flex items-center justify-center p-2 text-black no-underline hover:opacity-70 transition-opacity" aria-label="<?php esc_attr_e( 'View cart', 'aesir' ); ?>">
                     <span class="header-cart-icon-wrap relative inline-flex shrink-0">
@@ -54,6 +55,9 @@
                         <li><a href="<?php echo bloginfo('url'); ?>/my-account">Login</a></li>
                     <?php endif; ?>
                 </ul>
+                <?php if ( function_exists( 'aesir_language_switcher' ) ) : ?>
+                    <div class="mt-2"><?php aesir_language_switcher(); ?></div>
+                <?php endif; ?>
                 <div class="mt-2">
                     <p>Aesir Flagship Store<br />
                     128G Nguyễn Đình Chính, Phường 8, Quận Phú Nhuận, TP. Hồ Chí Minh</p>
@@ -85,6 +89,9 @@
                         <li><a href="<?php echo bloginfo('url'); ?>/my-account">Login</a></li>
                     <?php endif; ?>
                 </ul>
+                <?php if ( function_exists( 'aesir_language_switcher' ) ) : ?>
+                    <div class="mt-2"><?php aesir_language_switcher(); ?></div>
+                <?php endif; ?>
                 <div class="mt-2">
                     <p>Aesir Flagship Store<br />
                     128G Nguyễn Đình Chính, Phường 8, Quận Phú Nhuận, TP. Hồ Chí Minh</p>

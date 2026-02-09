@@ -213,5 +213,8 @@ include_once get_template_directory() . '/functions/checkout-state.php';
 // Menu functions
 include_once get_template_directory() . '/functions/child-menu.php';
 
+// Language switcher (header)
+include_once get_template_directory() . '/functions/language-switcher.php';
+
 // Purchased products tracking
 include_once get_template_directory() . '/functions/purchased-products.php';
