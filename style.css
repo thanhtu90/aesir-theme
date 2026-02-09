@@ -342,3 +342,23 @@ Version: 1
 .ppc-button-wrapper, .wc-block-components-express-payment, .wc-block-components-express-payment-continue-rule {
   display: none !important;
 }
+
+/* Header language switcher - dropdown and GTranslate-style */
+.aesir-language-switcher-wrap {
+  margin-left: 0.5rem;
+}
+.aesir-language-switcher {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23000' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.35rem center;
+  background-size: 0.6rem;
+  min-height: 2rem;
+  border-radius: 4px;
+  padding-right: 1.5rem;
+}
+.aesir-language-switcher--gt {
+  border-color: #d1d5db !important;
+}
+#menu .aesir-language-switcher-wrap {
+  margin-left: 0.25rem;
+}

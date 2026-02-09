@@ -11,6 +11,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Default language codes for header when GTranslate list cannot be read from settings.
+ *
+ * @return array<int, string>
+ */
+function aesir_gtranslate_default_lang_codes() {
+	return array( 'en', 'ar', 'zh-CN', 'nl', 'fr', 'de', 'it', 'ja', 'ko', 'pt', 'ru', 'es', 'th', 'vi' );
+}
+
+/**
  * GTranslate language code to name map (matches plugin dropdown languages).
  *
  * @return array<string, string>
@@ -110,15 +119,18 @@ function aesir_get_available_languages() {
 	$provider_pre = aesir_get_language_switcher_provider();
 	$gt_data      = get_option( 'GTranslate' );
 	if ( $provider_pre === 'gtranslate' && ( ! is_array( $gt_data ) || empty( $gt_data['widget_code'] ) ) ) {
-		// Plugin active but no option (e.g. gtranslate.io widget): show at least default so header switcher appears
+		// Plugin active but no option (e.g. gtranslate.io widget): use full default list so header matches bottom
 		$names   = aesir_gtranslate_language_names();
 		$default = 'en';
-		$languages[] = array(
-			'url'    => $default . '|' . $default,
-			'name'   => isset( $names[ $default ] ) ? $names[ $default ] : $default,
-			'code'   => $default,
-			'active' => false,
-		);
+		$codes   = aesir_gtranslate_default_lang_codes();
+		foreach ( $codes as $code ) {
+			$languages[] = array(
+				'url'    => $default . '|' . $code,
+				'name'   => isset( $names[ $code ] ) ? $names[ $code ] : $code,
+				'code'   => $code,
+				'active' => false,
+			);
+		}
 		return $languages;
 	}
 	if ( is_array( $gt_data ) && ! empty( $gt_data['widget_code'] ) ) {
@@ -179,12 +191,16 @@ function aesir_get_available_languages() {
 					}
 				}
 			}
-			// If no options with lang pair found, ensure default is available
-			if ( empty( $pairs ) ) {
-				$pairs[] = array(
-					'value' => $default . '|' . $default,
-					'name'  => isset( $names[ $default ] ) ? $names[ $default ] : $default,
-				);
+			// If we got fewer than 5 from parsing, use full default list so header matches GTranslate
+			if ( empty( $pairs ) || count( $pairs ) < 5 ) {
+				$codes = aesir_gtranslate_default_lang_codes();
+				$pairs = array();
+				foreach ( $codes as $code ) {
+					$pairs[] = array(
+						'value' => $default . '|' . $code,
+						'name'  => isset( $names[ $code ] ) ? $names[ $code ] : $code,
+					);
+				}
 			}
 		}
 
