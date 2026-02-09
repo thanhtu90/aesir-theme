@@ -146,6 +146,13 @@ details.group {
   background-position: right 0.35rem center;
   background-size: 0.6rem;
 }
+/* Match GTranslate widget style (white box, subtle border, rounded) */
+.aesir-language-switcher--gt {
+  min-height: 2rem;
+  border-color: #d1d5db !important;
+  border-radius: 4px;
+  padding-right: 1.5rem;
+}
 #menu .aesir-language-switcher-wrap {
   margin-left: 0.25rem;
 }

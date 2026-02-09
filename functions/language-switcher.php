@@ -144,13 +144,37 @@ function aesir_get_available_languages() {
 		} else {
 			// Fallback: parse widget_code for <option value="default|code">Name</option> (same as bottom widget)
 			$code = $gt_data['widget_code'];
-			// Match double- or single-quoted value with a pipe (lang pair)
-			if ( preg_match_all( '#<option\s+value=(["\'])([^"\']*\|[^"\']+)\1[^>]*>([^<]+)</option>#', $code, $m, PREG_SET_ORDER ) ) {
+			// Normalize: collapse newlines and extra space inside tags so regex can match
+			$code_norm = preg_replace( '/\s+/', ' ', $code );
+			// Match double- or single-quoted value with a pipe (lang pair); allow any chars in option text
+			if ( preg_match_all( '#<option\s+value=(["\'])([^"\']*\|[^"\']+)\1[^>]*>\s*([^<]*)\s*</option>#', $code_norm, $m, PREG_SET_ORDER ) ) {
 				foreach ( $m as $match ) {
 					if ( isset( $match[2] ) && $match[2] !== '' ) {
 						$pairs[] = array(
 							'value' => $match[2],
-							'name'  => trim( $match[3] ),
+							'name'  => trim( wp_strip_all_tags( $match[3] ) ),
+						);
+					}
+				}
+			}
+			// Also try unnormalized (options may be split across lines)
+			if ( empty( $pairs ) && preg_match_all( '#<option\s+value=(["\'])([^"\']*\|[^"\']+)\1[^>]*>([^<]*(?:<[^>]+>[^<]*)*)</option>#s', $code, $m, PREG_SET_ORDER ) ) {
+				foreach ( $m as $match ) {
+					if ( isset( $match[2] ) && $match[2] !== '' ) {
+						$pairs[] = array(
+							'value' => $match[2],
+							'name'  => trim( wp_strip_all_tags( $match[3] ) ),
+						);
+					}
+				}
+			}
+			// Very permissive: any option with value containing |
+			if ( empty( $pairs ) && preg_match_all( '#<option[^>]+value=(["\'])([^"\']*\|[^"\']+)\1[^>]*>([^<]+)#', $code_norm, $m, PREG_SET_ORDER ) ) {
+				foreach ( $m as $match ) {
+					if ( isset( $match[2] ) && $match[2] !== '' ) {
+						$pairs[] = array(
+							'value' => $match[2],
+							'name'  => trim( wp_strip_all_tags( $match[3] ) ),
 						);
 					}
 				}
@@ -197,12 +221,13 @@ function aesir_language_switcher() {
 	$id          = 'aesir-language-switcher';
 	$is_gt       = ( $provider === 'gtranslate' );
 	$default_gt  = $is_gt && ( $gt = get_option( 'GTranslate' ) ) && is_array( $gt ) && isset( $gt['default_language'] ) ? $gt['default_language'] : 'en';
-	$populate_from_dom = $is_gt && $count === 1;
+	// When GTranslate has few options, try to populate from widget on page (bottom switcher)
+	$populate_from_dom = $is_gt && $count < 5;
 	?>
 	<div class="aesir-language-switcher-wrap inline-flex items-center">
 		<label for="<?php echo esc_attr( $id ); ?>" class="sr-only"><?php esc_html_e( 'Language', 'aesir' ); ?></label>
 		<select id="<?php echo esc_attr( $id ); ?>"
-			class="aesir-language-switcher border border-black bg-white text-black text-sm py-1 pl-2 pr-6 max-w-[120px] cursor-pointer appearance-none focus:outline-none focus:ring-1 focus:ring-black"
+			class="aesir-language-switcher border border-black bg-white text-black text-sm py-1 pl-2 pr-6 max-w-[140px] cursor-pointer appearance-none focus:outline-none focus:ring-1 focus:ring-black<?php echo $is_gt ? ' aesir-language-switcher--gt' : ''; ?>"
 			aria-label="<?php esc_attr_e( 'Select language', 'aesir' ); ?>"
 			data-current-url="<?php echo esc_attr( $current_url ); ?>"
 			<?php if ( $is_gt ) : ?>
@@ -248,49 +273,60 @@ function aesir_language_switcher_script() {
 			return '';
 		}
 
-		// If we only had 1 option from PHP, try to copy from another GTranslate select on the page
-		if (populateFromDom && provider === 'gtranslate') {
+		function tryPopulateFromDom() {
+			if (sel.getAttribute('data-provider') !== 'gtranslate') return false;
 			var allSelects = document.querySelectorAll('select');
 			for (var i = 0; i < allSelects.length; i++) {
 				var s = allSelects[i];
 				if (s.id === 'aesir-language-switcher') continue;
-				var hasPair = false;
+				var optsWithPair = [];
 				for (var j = 0; j < s.options.length; j++) {
-					if (s.options[j].value && s.options[j].value.indexOf('|') !== -1) {
-						hasPair = true;
-						break;
-					}
+					if (s.options[j].value && s.options[j].value.indexOf('|') !== -1)
+						optsWithPair.push(s.options[j]);
 				}
-				if (hasPair && s.options.length > 1) {
+				if (optsWithPair.length >= 2) {
 					sel.innerHTML = '';
 					for (j = 0; j < s.options.length; j++) {
 						var opt = s.options[j];
 						if (!opt.value) continue;
 						var o = document.createElement('option');
 						o.value = opt.value;
-						o.textContent = opt.textContent || opt.innerText;
+						o.textContent = (opt.textContent || opt.innerText || '').trim();
 						sel.appendChild(o);
 					}
 					var firstVal = sel.options[0] && sel.options[0].value;
-					if (firstVal && firstVal.indexOf('|') !== -1) {
+					if (firstVal && firstVal.indexOf('|') !== -1)
 						sel.setAttribute('data-default-lang', firstVal.split('|')[0]);
-					}
-					break;
+					return true;
 				}
+			}
+			return false;
+		}
+
+		function applyGtSelection() {
+			var defaultLang = sel.getAttribute('data-default-lang') || 'en';
+			var googtrans = gtGetCookie('googtrans');
+			var pair = defaultLang + '|' + defaultLang;
+			if (googtrans) {
+				var parts = googtrans.split('/').filter(Boolean);
+				if (parts.length >= 2) {
+					pair = defaultLang + '|' + parts[1];
+				}
+			}
+			for (var j = 0; j < sel.options.length; j++) {
+				if (sel.options[j].value === pair) { sel.selectedIndex = j; return; }
 			}
 		}
 
+		if (populateFromDom && provider === 'gtranslate') {
+			if (tryPopulateFromDom()) applyGtSelection();
+			setTimeout(function() { if (tryPopulateFromDom()) applyGtSelection(); }, 400);
+			setTimeout(function() { if (tryPopulateFromDom()) applyGtSelection(); }, 1200);
+		}
+
 		if (provider === 'gtranslate') {
+			applyGtSelection();
 			var defaultLang = sel.getAttribute('data-default-lang') || 'en';
-			var googtrans = gtGetCookie('googtrans');
-			if (googtrans) {
-				var parts = googtrans.split('/').filter(Boolean);
-				var current = parts.length >= 2 ? parts[1] : defaultLang;
-				var pair = defaultLang + '|' + current;
-				for (var j = 0; j < sel.options.length; j++) {
-					if (sel.options[j].value === pair) { sel.selectedIndex = j; break; }
-				}
-			}
 			sel.addEventListener('change', function() {
 				var langPair = this.value;
 				if (!langPair) return;
