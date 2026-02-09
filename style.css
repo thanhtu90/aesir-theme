@@ -308,6 +308,16 @@ Version: 1
   font-size: 18px;
 }
 
+/* Header cart badge: sit at top-right of icon */
+.header-cart-icon-wrap {
+  position: relative;
+}
+.header-cart-icon-wrap .header-cart-count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+}
+
 /* Side cart */
 .xoo-wsc-sm-info{
   font-size: 10px !important;

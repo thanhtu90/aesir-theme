@@ -221,7 +221,8 @@ function aesir_header_cart_count_badge($echo = true) {
     }
     $count = WC()->cart->get_cart_contents_count();
     $hidden = $count > 0 ? '' : ' hidden';
-    $html = '<span class="header-cart-count absolute top-0.5 right-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-black text-white text-[11px] font-medium leading-none px-1' . esc_attr($hidden) . '">' . absint($count) . '</span>';
+    // Badge at top-right of icon: -top-1 -right-1 so it sits on the icon corner
+    $html = '<span class="header-cart-count absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-black text-white text-[11px] font-medium leading-none px-1' . esc_attr($hidden) . '">' . absint($count) . '</span>';
     if ($echo) {
         echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- badge count is escaped above.
         return '';

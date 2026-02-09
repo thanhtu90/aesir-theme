@@ -86,6 +86,17 @@
         $('#menu-mobile-close-btn').on('click', function() {
             $('#menu-mobile').addClass('hidden');
         });
+
+        // ============================================================
+        // Header cart: open right sidebar popup (same as bottom cart)
+        // ============================================================
+        $(document).on('click', '.aesir-open-side-cart', function(e) {
+            var $sideCartTrigger = $('.xoo-wsc-ct-btn, .xoo-wsc-cart-trigger, [data-xoo-wsc-trigger], .xoo-wsc-ct').first();
+            if ($sideCartTrigger.length) {
+                e.preventDefault();
+                $sideCartTrigger[0].click();
+            }
+        });
     });
 
 })(jQuery);
