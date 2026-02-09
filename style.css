@@ -1,0 +1,317 @@
+/*   
+Theme Name: Aesir Theme
+Description: This is just a Aesir starter WordPress Theme template
+Author: Tan Nguyen
+Version: 1
+*/
+
+/* Single Product Page */
+.product-grid .product,
+.wc-block-grid__products .wc-block-grid__product,
+.related .products .product {
+  border-bottom: 1px solid black;
+  border-right: none; /* reset */
+  border-left: none !important;
+  padding: 1rem; /* p-4 */
+  flex-direction: column; /* flex-col */
+  align-items: center; /* items-center */
+  justify-content: center; /* justify-center */
+  margin: 0 !important; /* reset margin */
+}
+.product-grid .product img,
+.wc-block-grid__products .wc-block-grid__product img,
+.related .products .product img {
+  margin: 0 auto !important; /* center image */
+}
+
+.wc-block-grid.has-4-columns .wc-block-grid__product,
+.woocommerce ul.products li.product,
+.woocommerce-page ul.products li.product {
+  max-width: 100% !important; /* override default 25% */
+  width: 100% !important; /* override default 25% */
+}
+
+.related .products::before {
+  display: none !important; /* remove the default border */
+}
+
+.product-grid .product .woocommerce-loop-product__title,
+.wc-block-grid__products .wc-block-grid__product .wc-block-grid__product-title,
+.related .products .product .woocommerce-loop-product__title {
+  text-align: center;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.product-grid .product .woocommerce-loop-product__link:hover,
+.wc-block-grid__products .wc-block-grid__product .wc-block-grid__product-link:hover,
+.related .products .product .woocommerce-loop-product__link:hover {
+  text-decoration: none !important;
+}
+
+.product-grid .product .price,
+.wc-block-grid__products .wc-block-grid__product .price,
+.related .products .product .price {
+  color: black !important;
+  margin-top: 8px;
+  display: block;
+  text-align: center;
+  font-size: 14px;
+}
+
+.product-grid .product .wpced,
+.product-grid .product .add_to_cart_button,
+.wc-block-grid__products .wc-block-grid__product .wc-block-grid__product-add-to-cart,
+.related .products .product .wpced,
+.related .products .product .add_to_cart_button {
+  display: none !important;
+}
+
+/* Mobile: 2 columns */
+.product-grid,
+.wc-block-grid__products,
+.related .products {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+}
+.product-grid .product:nth-child(odd),
+.wc-block-grid__products .wc-block-grid__product:nth-child(odd),
+.related .products .product:nth-child(odd) {
+  border-right: 1px solid black;
+}
+
+/* md: 3 columns */
+@media (min-width: 768px) {
+  .product-grid,
+  .wc-block-grid__products,
+  .related .products {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+  .product-grid .product:nth-child(3n + 1),
+  .product-grid .product:nth-child(3n + 2),
+  .wc-block-grid__products .wc-block-grid__product:nth-child(3n + 1),
+  .wc-block-grid__products .wc-block-grid__product:nth-child(3n + 2),
+  .related .products .product:nth-child(3n + 1),
+  .related .products .product:nth-child(3n + 2) {
+    border-right: 1px solid black;
+  }
+  .product-grid .product:nth-child(3n),
+  .wc-block-grid__products .wc-block-grid__product:nth-child(3n),
+  .related .products .product:nth-child(3n) {
+    border-right: none;
+  }
+}
+
+/* lg: 4 columns */
+@media (min-width: 1024px) {
+  .product-grid,
+  .wc-block-grid__products,
+  .related .products {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+  .product-grid .product:nth-child(4n + 1),
+  .product-grid .product:nth-child(4n + 2),
+  .product-grid .product:nth-child(4n + 3),
+  .wc-block-grid__products .wc-block-grid__product:nth-child(4n + 1),
+  .wc-block-grid__products .wc-block-grid__product:nth-child(4n + 2),
+  .wc-block-grid__products .wc-block-grid__product:nth-child(4n + 3),
+  .related .products .product:nth-child(4n + 1),
+  .related .products .product:nth-child(4n + 2),
+  .related .products .product:nth-child(4n + 3) {
+    border-right: 1px solid black;
+  }
+  .product-grid .product:nth-child(4n),
+  .wc-block-grid__products .wc-block-grid__product:nth-child(4n),
+  .related .products .product:nth-child(4n) {
+    border-right: none;
+  }
+}
+
+.woocommerce-breadcrumb {
+  border-bottom: 1px solid black;
+}
+
+.related ul.products {
+  margin: 0 !important;
+}
+.related.products {
+  grid-column: span 2 / span 2;
+  border-top: 1px solid black !important;
+}
+
+.related > h2 {
+  margin: 20px !important;
+  font-weight: 500;
+  font-size: 20px;
+}
+
+.woocommerce-product-gallery {
+  border-right: 1px solid black;
+  margin: 0px !important;
+}
+
+@media (max-width: 768px) { 
+  .woocommerce-product-gallery {
+    border-right: none;
+    border-bottom: 1px solid black;
+  }
+  .woocommerce-product-gallery, .single-product-right {
+    grid-column: span 2 / span 2;
+  }
+}
+
+.woocommerce #content div.product div.images, .woocommerce div.product div.images, .woocommerce-page #content div.product div.images, .woocommerce-page div.product div.images, .woocommerce #content div.product div.summary, .woocommerce div.product div.summary, .woocommerce-page #content div.product div.summary, .woocommerce-page div.product div.summary {
+  width: 100% !important;
+  float: none !important;
+}
+
+#product-single-left {
+  border-bottom: 1px solid black !important; /* default for mobile */
+}
+
+/* Desktop only */
+@media (min-width: 1024px) {
+  #product-single-left {
+    border-bottom: none !important;    /* remove bottom border */
+    border-right: 1px solid black !important; /* add right border */
+  }
+}
+
+.cuw-heading {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+#custom-fbt-section .cuw-add-to-cart {
+  max-width: none !important;
+}
+
+#custom-fbt-section label {
+  font-size: 13px;
+  text-transform: capitalize;
+  margin: 8px 0 !important;
+}
+
+#custom-fbt-section .cuw-product-title {
+  font-weight: 500;
+  font-size: 13px;
+}
+#custom-fbt-section .cuw-product-variants, #custom-fbt-section .cuw-buy-section {
+  padding: 0 10px !important;
+}
+/* Archive Product Page */
+.woocommerce-result-count, .woocommerce-ordering {
+  margin: 0px !important;
+}
+
+.woocommerce-ordering select{
+  border: 1px solid black;
+  border-radius: 6px; 
+  padding: 8px;
+}
+
+.product-category{
+  list-style: none;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* Cart Page */
+.wc-block-components-sidebar-layout {
+  padding-top: 20px !important;
+}
+.wp-block-woocommerce-cart .wc-block-grid__products,
+.related .products {
+  border-top: 1px solid black !important;
+  width: 100% !important;
+}
+
+.wp-block-woocommerce-cart .wc-block-grid__products .wc-block-grid__product {
+  margin: 0 !important;
+}
+
+.wp-block-woocommerce-cart .wp-block-heading {
+  margin: 20px 0 !important;
+  font-weight: 500;
+  font-size: 20px;
+}
+
+.wp-block-woocommerce-cart .wc-block-cart {
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.wp-block-woocommerce-cart .wc-block-cart-item__remove-link {
+  border: 1px solid black !important;
+}
+
+
+/* Order Page */
+.woocommerce-order h2 {
+  margin: 20px 0 !important;
+  font-weight: 500;
+  font-size: 20px;
+}
+.woocommerce-order .woocommerce-order-overview {
+  margin-top: 20px !important;
+}
+
+/* Account Page */
+.woocommerce-MyAccount-navigation li {
+  padding: 8px 0;
+}
+.woocommerce-MyAccount-navigation .is-active a {
+  font-weight: 600;
+  border-bottom: 2px solid black;
+}
+.woocommerce-Address-title {
+  margin: 20px 0;
+}
+.woocommerce-Address-title a {
+  font-size: 12px;
+  text-decoration: underline;
+}
+
+.button, .woocommerce-Button, .woocommerce-button {
+  min-width: 140px;
+  min-height: 2.5rem;
+  font-size: 0.75rem;
+  text-align: center;
+  text-transform: uppercase;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  cursor: pointer;
+  border: 1px solid black !important;
+  border-radius: 4px;
+  background-color: #fff;
+  line-height: 1.3;
+  transition: all 0.3s;
+  text-decoration: none !important;
+}
+.woocommerce-Button:hover, .woocommerce-button:hover {
+  background-color: #000;
+  color: #fff;
+}
+
+.woocommerce-form-row label {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.woocommerce-order-details__title, .woocommerce-column__title, .wc-block-order-confirmation-additional-fields-wrapper h2 {
+  margin: 16px 0 !important;
+  font-weight: 500;
+  font-size: 18px;
+}
+
+/* Side cart */
+.xoo-wsc-sm-info{
+  font-size: 10px !important;
+}
+.ppc-button-wrapper, .wc-block-components-express-payment, .wc-block-components-express-payment-continue-rule {
+  display: none !important;
+}

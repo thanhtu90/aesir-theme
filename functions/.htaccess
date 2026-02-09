@@ -1,0 +1,11 @@
+# Block direct access to PHP files in this directory
+<FilesMatch "\.php$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Block access to any log, txt, sql, or backup files
+<FilesMatch "\.(txt|log|sql|bak|backup)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>

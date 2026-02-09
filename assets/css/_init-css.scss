@@ -1,0 +1,47 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+
+
+:root {
+  --svh: 1vh; /* fallback */
+}
+
+@supports (height: 100svh) {
+  :root {
+    --svh: 1svh; /* modern safe viewport unit */
+  }
+}
+
+body, html, p {
+    @apply font-montserrat text-base leading-[140%] text-black
+}
+
+a {
+    @apply transition-all duration-300
+}
+
+a:hover {
+    @apply underline 
+}
+
+p {
+    @apply mb-2
+}
+
+.button, 
+.wc-block-components-button, 
+.wc-block-cart-item__remove-link, 
+.woocommerce-Button {
+    @apply min-w-[140px] min-h-10 text-xs text-center uppercase px-4 cursor-pointer !border !border-black rounded-[4px] bg-white  leading-[130%] hover:bg-black hover:text-white transition-all duration-300 no-underline !important;
+}
+
+.title {
+    @apply text-[22px] font-bold leading-[110%] tracking-[1.1px] uppercase
+} 
+
+.header-menu {
+    @apply hidden lg:flex items-center gap-1;
+    a {
+        @apply text-sm leading-[130%] tracking-[0.36px] uppercase inline-flex items-center justify-center h-7 px-2 border border-white rounded-[4px] hover:border-black no-underline;
+    }
+}
+
