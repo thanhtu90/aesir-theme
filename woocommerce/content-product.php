@@ -24,7 +24,13 @@ if ( ! is_a( $product, WC_Product::class ) || ! $product->is_visible() ) {
 	return;
 }
 ?>
-<li <?php wc_product_class( '', $product ); ?> data-product_id="<?php the_ID(); ?>">
+<li <?php wc_product_class( 'aesir-product-card', $product ); ?> data-product_id="<?php the_ID(); ?>">
+	<?php
+		// Wishlist heart overlay – UI only, integrates with wishlist plugins if present.
+		if ( function_exists( 'aesir_render_product_wishlist_heart' ) ) {
+			aesir_render_product_wishlist_heart( $product );
+		}
+	?>
 	<?php
 	/**
 	 * Hook: woocommerce_before_shop_loop_item.

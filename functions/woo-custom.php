@@ -210,6 +210,52 @@ add_filter('woocommerce_breadcrumb_defaults', function($defaults) {
 // ============================================================
 
 /**
+ * Try to resolve a Wishlist URL from common plugins / pages.
+ *
+ * - YITH WooCommerce Wishlist
+ * - TI WooCommerce Wishlist
+ * - Fallback: /wishlist/ page slug if it exists, else home_url('/wishlist')
+ *
+ * @return string
+ */
+function aesir_get_wishlist_url() {
+    // YITH WooCommerce Wishlist page
+    if ( function_exists( 'YITH_WCWL' ) && defined( 'YITH_WCWL' ) ) {
+        $yith_page_id = get_option( 'yith_wcwl_wishlist_page_id' );
+        if ( $yith_page_id ) {
+            $url = get_permalink( $yith_page_id );
+            if ( $url ) {
+                return $url;
+            }
+        }
+    }
+
+    // TI WooCommerce Wishlist – commonly uses a page with [ti_wishlist] shortcode
+    if ( function_exists( 'shortcode_exists' ) && shortcode_exists( 'ti_wishlist' ) ) {
+        $pages = get_pages(
+            array(
+                'meta_key'   => '_wp_page_template',
+                'meta_value' => '', // any
+            )
+        );
+        foreach ( $pages as $page ) {
+            if ( has_shortcode( $page->post_content, 'ti_wishlist' ) ) {
+                return get_permalink( $page->ID );
+            }
+        }
+    }
+
+    // Fallback: page with slug "wishlist"
+    $wishlist_page = get_page_by_path( 'wishlist' );
+    if ( $wishlist_page ) {
+        return get_permalink( $wishlist_page );
+    }
+
+    // Last resort: assume /wishlist/ exists or will be created later.
+    return home_url( '/wishlist/' );
+}
+
+/**
  * Output or return the header cart count badge HTML.
  *
  * @param bool $echo Whether to echo (true) or return (false).
@@ -240,6 +286,60 @@ add_filter('woocommerce_add_to_cart_fragments', function($fragments) {
     $fragments['.header-cart-count-wrap'] = '<span class="header-cart-count-wrap">' . aesir_header_cart_count_badge(false) . '</span>';
     return $fragments;
 });
+
+// ============================================================
+// WISHLIST HEART (PRODUCT GRID) – UI HOOK
+// ============================================================
+
+/**
+ * Render a wishlist heart icon overlay for a product in the catalog loop.
+ *
+ * This is UI-only – it delegates to common wishlist plugins when available,
+ * and otherwise renders a generic heart button which can be wired up later.
+ *
+ * @param WC_Product $product
+ */
+function aesir_render_product_wishlist_heart( $product ) {
+    if ( ! $product instanceof WC_Product ) {
+        return;
+    }
+
+    $product_id = $product->get_id();
+
+    echo '<div class="aesir-product-wishlist-heart">';
+
+    // Delegate to common wishlist plugins if they are active.
+    if ( function_exists( 'shortcode_exists' ) ) {
+        // YITH WooCommerce Wishlist.
+        if ( shortcode_exists( 'yith_wcwl_add_to_wishlist' ) ) {
+            echo do_shortcode( '[yith_wcwl_add_to_wishlist product_id="' . esc_attr( $product_id ) . '" link_classes="aesir-wishlist-btn"]' );
+            echo '</div>';
+            return;
+        }
+
+        // TI WooCommerce Wishlist.
+        if ( shortcode_exists( 'ti_wishlist_addtowishlist' ) ) {
+            echo do_shortcode( '[ti_wishlist_addtowishlist product_id="' . esc_attr( $product_id ) . '" classes="aesir-wishlist-btn"]' );
+            echo '</div>';
+            return;
+        }
+    }
+
+    // Generic heart button – can be wired up later to custom logic.
+    ?>
+    <button
+        type="button"
+        class="aesir-wishlist-btn"
+        aria-label="<?php esc_attr_e( 'Add to wishlist', 'aesir' ); ?>"
+        data-product-id="<?php echo esc_attr( $product_id ); ?>"
+    >
+        <svg class="aesir-wishlist-heart-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12.1 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.65 11.54l-1.25 1.31z" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        </svg>
+    </button>
+    <?php
+    echo '</div>';
+}
 
 // ============================================================
 // EMAIL CC TO CUSTOMER
