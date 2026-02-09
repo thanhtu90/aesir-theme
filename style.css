@@ -474,3 +474,17 @@ Version: 1
 #menu .aesir-ls {
   margin-left: 0.25rem;
 }
+
+/* Mobile deep submenu toggle (only affects level > 2 on mobile) */
+.mobile-deep-submenu-toggle {
+  margin-left: 4px;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+.mobile-deep-submenu-toggle-icon {
+  display: inline-block;
+}

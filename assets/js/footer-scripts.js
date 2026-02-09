@@ -77,14 +77,78 @@
         });
 
         // ============================================================
-        // Mobile Menu
+        // Mobile Menu (open / close)
         // ============================================================
         $('#menu-mobile-btn').on('click', function() {
             $('#menu-mobile').toggleClass('hidden');
+            initDeepMobileSubmenus();
         });
 
         $('#menu-mobile-close-btn').on('click', function() {
             $('#menu-mobile').addClass('hidden');
+        });
+
+        // ============================================================
+        // Mobile deep submenus (level > 2)
+        // ============================================================
+        function initDeepMobileSubmenus() {
+            var isMobile = window.innerWidth < 1024;
+            var $menu = $('#menu-mobile');
+            if (!$menu.length) return;
+
+            // Only touch submenus deeper than level 2: .sub-menu .menu-item-has-children
+            var $deepParents = $menu.find('.sub-menu .menu-item-has-children');
+
+            $deepParents.each(function() {
+                var $li = $(this);
+                var $submenu = $li.children('.sub-menu');
+                if (!$submenu.length) return;
+
+                if (!isMobile) {
+                    // Desktop: ensure everything is visible; do not collapse.
+                    $submenu.show();
+                    return;
+                }
+
+                // Mobile behavior
+                if ($li.data('deepMobileInit')) {
+                    // Ensure collapsed by default every time we re-enter mobile.
+                    $submenu.hide();
+                    return;
+                }
+
+                $li.data('deepMobileInit', true);
+
+                var $link = $li.children('a').first();
+                var $toggle = $('<button type="button" class="mobile-deep-submenu-toggle" aria-expanded="false" aria-label="Toggle submenu"><span class="mobile-deep-submenu-toggle-icon">+</span></button>');
+
+                if ($link.length) {
+                    $link.after($toggle);
+                } else {
+                    $li.prepend($toggle);
+                }
+
+                // Collapse deep submenu by default on mobile.
+                $submenu.hide();
+            });
+        }
+
+        // Initialize deep submenu state on load + on resize.
+        $(window).on('resize', initDeepMobileSubmenus);
+        initDeepMobileSubmenus();
+
+        // Toggle deep submenu open/close on mobile
+        $(document).on('click', '.mobile-deep-submenu-toggle', function(e) {
+            e.preventDefault();
+            var $btn = $(this);
+            var $li = $btn.closest('li');
+            var $submenu = $li.children('.sub-menu');
+            if (!$submenu.length) return;
+
+            $submenu.stop(true, true).slideToggle(200);
+            var expanded = $btn.attr('aria-expanded') === 'true';
+            $btn.attr('aria-expanded', expanded ? 'false' : 'true');
+            $btn.find('.mobile-deep-submenu-toggle-icon').text(expanded ? '+' : '−');
         });
 
         // ============================================================
