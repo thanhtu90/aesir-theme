@@ -474,17 +474,3 @@ Version: 1
 #menu .aesir-ls {
   margin-left: 0.25rem;
 }
-
-/* Mobile menu submenu toggle button */
-.mobile-submenu-toggle {
-  margin-left: 4px;
-  border: none;
-  background: none;
-  padding: 0;
-  cursor: pointer;
-  font-size: 18px;
-  line-height: 1;
-}
-.mobile-submenu-toggle-icon {
-  display: inline-block;
-}
