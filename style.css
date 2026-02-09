@@ -394,8 +394,18 @@ Version: 1
   background: #f9fafb;
 }
 .aesir-ls__flag {
-  font-size: 18px;
   line-height: 1;
+  display: inline-flex;
+  align-items: center;
+}
+.aesir-ls__flag-img,
+.aesir-ls__option-flag .aesir-ls__flag-img {
+  width: 24px;
+  height: auto;
+  max-height: 18px;
+  object-fit: contain;
+  border-radius: 2px;
+  vertical-align: middle;
 }
 .aesir-ls__label {
   max-width: 120px;

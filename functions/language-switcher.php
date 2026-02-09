@@ -258,23 +258,23 @@ function aesir_language_switcher() {
 	$is_gt       = ( $provider === 'gtranslate' );
 	$default_gt  = $is_gt && ( $gt = get_option( 'GTranslate' ) ) && is_array( $gt ) && isset( $gt['default_language'] ) ? $gt['default_language'] : 'en';
 	$populate_from_dom = $is_gt && $count < 5;
-	$flags       = $is_gt ? aesir_language_flag_emojis() : array();
 
+	// GTranslate CDN flag URL (same as plugin: https://cdn.gtranslate.net/flags/svg/{code}.svg)
+	$gt_flag_base = 'https://cdn.gtranslate.net/flags/svg/';
 	if ( $is_gt ) :
-		// GTranslate: custom dropdown with flags (matches bottom widget UI)
 		?>
-		<div class="aesir-language-switcher-wrap aesir-ls" id="aesir-ls-wrap" data-provider="gtranslate" data-default-lang="<?php echo esc_attr( $default_gt ); ?>" <?php echo $populate_from_dom ? ' data-populate-from-dom="1"' : ''; ?>>
+		<div class="aesir-language-switcher-wrap aesir-ls" id="aesir-ls-wrap" data-provider="gtranslate" data-default-lang="<?php echo esc_attr( $default_gt ); ?>" data-flag-base="<?php echo esc_attr( $gt_flag_base ); ?>" <?php echo $populate_from_dom ? ' data-populate-from-dom="1"' : ''; ?>>
 			<button type="button" class="aesir-ls__current" id="aesir-ls-current" aria-haspopup="listbox" aria-expanded="false" aria-label="<?php esc_attr_e( 'Select language', 'aesir' ); ?>">
-				<span class="aesir-ls__flag" id="aesir-ls-flag" aria-hidden="true"><?php echo isset( $flags[ $default_gt ] ) ? esc_html( $flags[ $default_gt ] ) : '🌐'; ?></span>
+				<span class="aesir-ls__flag" id="aesir-ls-flag" aria-hidden="true"><img src="<?php echo esc_url( $gt_flag_base . $default_gt . '.svg' ); ?>" alt="" width="24" height="18" class="aesir-ls__flag-img"></span>
 				<span class="aesir-ls__label" id="aesir-ls-label"><?php echo esc_html( isset( $languages[0] ) ? $languages[0]['name'] : 'English' ); ?></span>
 				<span class="aesir-ls__chevron" aria-hidden="true">▼</span>
 			</button>
 			<ul class="aesir-ls__list" id="aesir-ls-list" role="listbox" hidden>
 				<?php foreach ( $languages as $lang ) :
-					$flag = isset( $flags[ $lang['code'] ] ) ? $flags[ $lang['code'] ] : '🌐';
+					$flag_src = $gt_flag_base . $lang['code'] . '.svg';
 				?>
-					<li class="aesir-ls__option" role="option" tabindex="-1" data-value="<?php echo esc_attr( $lang['url'] ); ?>" data-code="<?php echo esc_attr( $lang['code'] ); ?>">
-						<span class="aesir-ls__option-flag" aria-hidden="true"><?php echo esc_html( $flag ); ?></span>
+					<li class="aesir-ls__option" role="option" tabindex="-1" data-value="<?php echo esc_attr( $lang['url'] ); ?>" data-code="<?php echo esc_attr( $lang['code'] ); ?>" data-flag-src="<?php echo esc_url( $flag_src ); ?>">
+						<span class="aesir-ls__option-flag" aria-hidden="true"><img src="<?php echo esc_url( $flag_src ); ?>" alt="" width="24" height="18" class="aesir-ls__flag-img"></span>
 						<span class="aesir-ls__option-label"><?php echo esc_html( $lang['name'] ); ?></span>
 					</li>
 				<?php endforeach; ?>
@@ -327,23 +327,13 @@ function aesir_language_switcher_script() {
 			}
 			return '';
 		}
+		// Cookie format per GTranslate: /from/to (e.g. /en/es). Plugin reads via split('/')[2] for target lang.
 		function gtSetCookie(from, to) {
 			if (to === from || !to) {
 				document.cookie = 'googtrans=; path=/; max-age=0';
 			} else {
 				document.cookie = 'googtrans=/' + from + '/' + to + '; path=/; max-age=31536000; SameSite=Lax';
 			}
-		}
-		function gtApplyLanguage(langPair) {
-			if (!langPair) return;
-			var parts = langPair.split('|');
-			var from = parts[0] || 'en';
-			var to = parts[1] || from;
-			gtSetCookie(from, to);
-			if (typeof doGTranslate === 'function') {
-				try { doGTranslate(langPair); } catch (e) {}
-			}
-			location.reload();
 		}
 
 		var wrap = document.getElementById('aesir-ls-wrap');
@@ -354,18 +344,41 @@ function aesir_language_switcher_script() {
 			var labelEl = document.getElementById('aesir-ls-label');
 			var sel = document.getElementById('aesir-language-switcher');
 			var defaultLang = wrap.getAttribute('data-default-lang') || 'en';
+			// Current lang from cookie: plugin uses split('/')[2] so value is /from/to -> [ '', 'from', 'to' ]
 			var googtrans = gtGetCookie('googtrans');
 			var currentCode = defaultLang;
 			if (googtrans) {
 				var segs = googtrans.split('/').filter(Boolean);
 				if (segs.length >= 2) currentCode = segs[1];
 			}
+			function setCurrentDisplay(opt) {
+				if (!opt) return;
+				var flagImg = flagEl && flagEl.querySelector('img');
+				var optFlag = opt.querySelector('.aesir-ls__option-flag img');
+				if (flagImg && optFlag && optFlag.src) flagImg.src = optFlag.src;
+				if (labelEl) labelEl.textContent = (opt.querySelector('.aesir-ls__option-label') || {}).textContent || '';
+			}
+			function gtApplyLanguage(langPair) {
+				if (!langPair) return;
+				var parts = langPair.split('|');
+				var from = parts[0] || 'en';
+				var to = parts[1] || from;
+				if (typeof window.doGTranslate === 'function') {
+					try {
+						window.doGTranslate(langPair);
+						var opt = list && list.querySelector('.aesir-ls__option[data-value="' + langPair + '"]');
+						setCurrentDisplay(opt);
+					} catch (e) {}
+					return;
+				}
+				gtSetCookie(from, to);
+				location.reload();
+			}
 			var pair = defaultLang + '|' + currentCode;
 			var options = list ? list.querySelectorAll('.aesir-ls__option') : [];
 			for (var i = 0; i < options.length; i++) {
 				if (options[i].getAttribute('data-value') === pair) {
-					if (flagEl) flagEl.textContent = options[i].querySelector('.aesir-ls__option-flag').textContent;
-					if (labelEl) labelEl.textContent = options[i].querySelector('.aesir-ls__option-label').textContent;
+					setCurrentDisplay(options[i]);
 					if (sel) { sel.value = pair; sel.selectedIndex = i; }
 					break;
 				}
