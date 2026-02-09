@@ -274,7 +274,7 @@ function aesir_render_cart_cross_sells() {
     $cart        = WC()->cart;
     $cross_sells = $cart->get_cross_sells();
 
-    // Fallback: if no manual cross-sells, use related products based on cart items.
+    // Fallback: if no manual cross-sells, use related products based on each cart item.
     if ( empty( $cross_sells ) ) {
         $cart_product_ids = array();
 
@@ -287,9 +287,23 @@ function aesir_render_cart_cross_sells() {
         $cart_product_ids = array_unique( array_filter( $cart_product_ids ) );
 
         if ( ! empty( $cart_product_ids ) ) {
-            // Use WooCommerce helper to get related products from same categories/tags.
-            $related = wc_get_related_products( $cart_product_ids, 4, $cart_product_ids );
-            $cross_sells = ! empty( $related ) ? $related : $cross_sells;
+            $related = array();
+
+            // Collect related products per-item (same categories/tags), excluding items already in cart.
+            foreach ( $cart_product_ids as $pid ) {
+                $per_product_related = wc_get_related_products( $pid, 4, array_merge( $cart_product_ids, $related ) );
+                if ( ! empty( $per_product_related ) ) {
+                    $related = array_merge( $related, $per_product_related );
+                }
+
+                if ( count( $related ) >= 4 ) {
+                    break;
+                }
+            }
+
+            if ( ! empty( $related ) ) {
+                $cross_sells = $related;
+            }
         }
     }
 
