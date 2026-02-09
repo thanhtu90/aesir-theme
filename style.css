@@ -350,6 +350,14 @@ Version: 1
   display: none !important;
 }
 
+/* Extra safety: move Woo side-cart trigger off-screen and disable clicks,
+   since inline styles may force display back to flex/block. */
+.xoo-wsc-basket {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  bottom: -9999px !important;
+}
+
 /* Header language switcher - dropdown and GTranslate-style */
 .aesir-language-switcher-wrap {
   margin-left: 0.5rem;
