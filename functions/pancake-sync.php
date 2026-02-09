@@ -145,7 +145,7 @@ function wc_to_pancake_send_order($order_id) {
             'phone_number' => '',
             'province_id' => null,
         ],
-        'custom_id' => "WC-$order_id",
+        'custom_id' => 'WC-' . $order->get_order_number(),
         'activated_promotion_advances' => [],
         'status' => 0,
         'cod' => $data['payment_method'] === 'cod' ? intval($data['total']) : 0,

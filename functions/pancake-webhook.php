@@ -98,6 +98,43 @@ function verify_pancake_webhook_request($request) {
 }
 
 /**
+ * Resolve a WooCommerce order by order number (e.g. sequential number from WT plugin).
+ * Compatible with Sequential Order Number for WooCommerce: use get_order_number() for external refs.
+ *
+ * @param string $order_number The order number as sent to external systems (e.g. "1001" or "AES-1001").
+ * @return WC_Order|false Order object or false if not found.
+ */
+function aesir_get_order_by_order_number($order_number) {
+    $order_number = trim((string) $order_number);
+    if ($order_number === '') {
+        return false;
+    }
+
+    // Try by numeric ID first (backward compat when order number equals post ID).
+    if (is_numeric($order_number)) {
+        $order = wc_get_order((int) $order_number);
+        if ($order && (string) $order->get_order_number() === $order_number) {
+            return $order;
+        }
+    }
+
+    // Find by order number (sequential / custom number).
+    $orders = wc_get_orders([
+        'limit'    => 200,
+        'orderby'  => 'date',
+        'order'    => 'DESC',
+        'return'   => 'objects',
+    ]);
+    foreach ($orders as $order) {
+        if ((string) $order->get_order_number() === $order_number) {
+            return $order;
+        }
+    }
+
+    return false;
+}
+
+/**
  * Handle Pancake order update webhook
  *
  * @param WP_REST_Request $request
@@ -106,7 +143,7 @@ function verify_pancake_webhook_request($request) {
 function handle_pancake_order_update($request) {
     $data = $request->get_json_params();
 
-    // Validate order ID format
+    // Validate order ID format (WC-{order_number} — order_number may be sequential from plugin)
     $pancake_order_id = sanitize_text_field($data['id'] ?? '');
 
     if (!$pancake_order_id || strpos($pancake_order_id, 'WC-') !== 0) {
@@ -117,17 +154,8 @@ function handle_pancake_order_update($request) {
         );
     }
 
-    $order_id = intval(substr($pancake_order_id, 3));
-
-    if ($order_id <= 0) {
-        return new WP_Error(
-            'invalid_order_id',
-            'Invalid order ID format',
-            ['status' => 400]
-        );
-    }
-
-    $order = wc_get_order($order_id);
+    $order_number_ref = substr($pancake_order_id, 3);
+    $order = aesir_get_order_by_order_number($order_number_ref);
 
     if (!$order) {
         return new WP_Error(
@@ -156,10 +184,10 @@ function handle_pancake_order_update($request) {
     // Update order status
     $order->update_status($wc_status, 'Updated from Pancake webhook');
 
-    // Log successful update
+    // Log successful update (use order number for consistency with Sequential Order Number plugin)
     aesir_log(sprintf(
-        'Order %d updated via Pancake webhook: status %d -> %s',
-        $order_id,
+        'Order %s updated via Pancake webhook: status %d -> %s',
+        $order->get_order_number(),
         $pancake_status,
         $wc_status
     ));
@@ -167,7 +195,8 @@ function handle_pancake_order_update($request) {
     return rest_ensure_response([
         'success' => true,
         'pancake_order_id' => $pancake_order_id,
-        'order_id' => $order_id,
+        'order_id' => $order->get_id(),
+        'order_number' => $order->get_order_number(),
         'new_status' => $wc_status,
     ]);
 }
