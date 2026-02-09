@@ -96,8 +96,9 @@
             var $menu = $('#menu-mobile');
             if (!$menu.length) return;
 
-            // Only touch submenus deeper than level 2: .sub-menu .menu-item-has-children
-            var $deepParents = $menu.find('.sub-menu .menu-item-has-children');
+            // On mobile, collapse all submenus deeper than level 1 (i.e. any li.menu-item-has-children).
+            // On desktop, leave everything visible.
+            var $deepParents = $menu.find('li.menu-item-has-children');
 
             $deepParents.each(function() {
                 var $li = $(this);
@@ -105,12 +106,12 @@
                 if (!$submenu.length) return;
 
                 if (!isMobile) {
-                    // Desktop: ensure everything is visible; do not collapse.
+                    // Desktop: ensure everything is visible; do not collapse or modify structure.
                     $submenu.show();
                     return;
                 }
 
-                // Mobile behavior
+                // Mobile behavior for level > 1
                 if ($li.data('deepMobileInit')) {
                     // Ensure collapsed by default every time we re-enter mobile.
                     $submenu.hide();

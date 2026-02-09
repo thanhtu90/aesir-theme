@@ -475,14 +475,21 @@ Version: 1
   margin-left: 0.25rem;
 }
 
-/* Mobile deep submenu toggle (only affects level > 2 on mobile) */
+/* Mobile deep submenu toggle (affects all submenus deeper than level 1 on mobile) */
+.menu #menu-mobile li.menu-item-has-children,
+#menu-mobile li.menu-item-has-children {
+  position: relative;
+}
 .mobile-deep-submenu-toggle {
-  margin-left: 4px;
+  position: absolute;
+  top: 50%;
+  right: 0.75rem;
+  transform: translateY(-50%);
   border: none;
   background: none;
   padding: 0;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 20px;
   line-height: 1;
 }
 .mobile-deep-submenu-toggle-icon {
