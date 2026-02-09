@@ -206,6 +206,41 @@ add_filter('woocommerce_breadcrumb_defaults', function($defaults) {
 }, 10, 1);
 
 // ============================================================
+// HEADER CART ICON & BADGE (TOP-RIGHT)
+// ============================================================
+
+/**
+ * Output or return the header cart count badge HTML.
+ *
+ * @param bool $echo Whether to echo (true) or return (false).
+ * @return string Empty string when echoing, else badge HTML.
+ */
+function aesir_header_cart_count_badge($echo = true) {
+    if (!function_exists('WC') || !WC()->cart) {
+        return '';
+    }
+    $count = WC()->cart->get_cart_contents_count();
+    $hidden = $count > 0 ? '' : ' hidden';
+    $html = '<span class="header-cart-count absolute top-0.5 right-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-black text-white text-[11px] font-medium leading-none px-1' . esc_attr($hidden) . '">' . absint($count) . '</span>';
+    if ($echo) {
+        echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- badge count is escaped above.
+        return '';
+    }
+    return $html;
+}
+
+/**
+ * Refresh header cart badge via WooCommerce cart fragments (AJAX).
+ */
+add_filter('woocommerce_add_to_cart_fragments', function($fragments) {
+    if (!function_exists('WC') || !WC()->cart) {
+        return $fragments;
+    }
+    $fragments['.header-cart-count-wrap'] = '<span class="header-cart-count-wrap">' . aesir_header_cart_count_badge(false) . '</span>';
+    return $fragments;
+});
+
+// ============================================================
 // EMAIL CC TO CUSTOMER
 // ============================================================
 
