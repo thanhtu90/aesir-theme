@@ -135,3 +135,16 @@ details.group {
 .single-product-left .woocommerce-product-gallery {
   @apply w-full !important;
 }
+
+/* Category product card – position YITH wishlist heart top-left on image */
+.products li.product {
+  position: relative;
+}
+.products li.product .yith-wcwl-add-to-wishlist-button.yith-wcwl-add-to-wishlist-button-over-image--top-left {
+  position: absolute !important;
+  top: -14px !important;
+  left: 0 !important;
+  right: auto !important;
+  bottom: auto !important;
+  z-index: 5;
+}
