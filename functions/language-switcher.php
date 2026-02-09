@@ -50,6 +50,15 @@ function aesir_get_language_switcher_provider() {
 	if ( class_exists( 'GTranslate', false ) || get_option( 'GTranslate' ) ) {
 		return 'gtranslate';
 	}
+	// GTranslate may be active but option not set (e.g. gtranslate.io widget, or plugin just activated)
+	$active = get_option( 'active_plugins', array() );
+	if ( is_array( $active ) ) {
+		foreach ( $active as $plugin ) {
+			if ( stripos( $plugin, 'gtranslate' ) !== false ) {
+				return 'gtranslate';
+			}
+		}
+	}
 	return '';
 }
 
@@ -97,8 +106,21 @@ function aesir_get_available_languages() {
 		return $languages;
 	}
 
-	// GTranslate: from plugin settings (incl_langs) or by parsing widget_code
-	$gt_data = get_option( 'GTranslate' );
+	// GTranslate: from plugin settings (incl_langs) or by parsing widget_code; fallback to default when option missing
+	$provider_pre = aesir_get_language_switcher_provider();
+	$gt_data      = get_option( 'GTranslate' );
+	if ( $provider_pre === 'gtranslate' && ( ! is_array( $gt_data ) || empty( $gt_data['widget_code'] ) ) ) {
+		// Plugin active but no option (e.g. gtranslate.io widget): show at least default so header switcher appears
+		$names   = aesir_gtranslate_language_names();
+		$default = 'en';
+		$languages[] = array(
+			'url'    => $default . '|' . $default,
+			'name'   => isset( $names[ $default ] ) ? $names[ $default ] : $default,
+			'code'   => $default,
+			'active' => false,
+		);
+		return $languages;
+	}
 	if ( is_array( $gt_data ) && ! empty( $gt_data['widget_code'] ) ) {
 		$default = isset( $gt_data['default_language'] ) ? $gt_data['default_language'] : 'en';
 		$names   = aesir_gtranslate_language_names();
@@ -158,14 +180,16 @@ function aesir_get_available_languages() {
 
 /**
  * Outputs the language switcher dropdown markup.
- * Renders when WPML, Polylang, or GTranslate is active and more than one language exists.
+ * Renders when WPML/Polylang have 2+ languages, or GTranslate is active (show with 1+ languages).
  * Selection is persisted by the active plugin (cookies / URL).
  */
 function aesir_language_switcher() {
 	$languages = aesir_get_available_languages();
 	$provider  = aesir_get_language_switcher_provider();
+	$count     = count( $languages );
 
-	if ( count( $languages ) < 2 ) {
+	$show = ( $count >= 2 ) || ( $provider === 'gtranslate' && $count >= 1 );
+	if ( ! $show ) {
 		return;
 	}
 
@@ -173,6 +197,7 @@ function aesir_language_switcher() {
 	$id          = 'aesir-language-switcher';
 	$is_gt       = ( $provider === 'gtranslate' );
 	$default_gt  = $is_gt && ( $gt = get_option( 'GTranslate' ) ) && is_array( $gt ) && isset( $gt['default_language'] ) ? $gt['default_language'] : 'en';
+	$populate_from_dom = $is_gt && $count === 1;
 	?>
 	<div class="aesir-language-switcher-wrap inline-flex items-center">
 		<label for="<?php echo esc_attr( $id ); ?>" class="sr-only"><?php esc_html_e( 'Language', 'aesir' ); ?></label>
@@ -183,6 +208,7 @@ function aesir_language_switcher() {
 			<?php if ( $is_gt ) : ?>
 				data-provider="gtranslate"
 				data-default-lang="<?php echo esc_attr( $default_gt ); ?>"
+				<?php if ( $populate_from_dom ) : ?>data-populate-from-dom="1"<?php endif; ?>
 			<?php endif; ?>>
 			<?php foreach ( $languages as $lang ) : ?>
 				<option value="<?php echo esc_attr( $lang['url'] ); ?>" <?php selected( ! empty( $lang['active'] ) ); ?>>
@@ -198,16 +224,20 @@ function aesir_language_switcher() {
  * Enqueue inline script for language switcher (redirect or GTranslate cookie/doGTranslate).
  */
 function aesir_language_switcher_script() {
-	if ( count( aesir_get_available_languages() ) < 2 ) {
+	$languages = aesir_get_available_languages();
+	$provider  = aesir_get_language_switcher_provider();
+	$count     = count( $languages );
+	$run       = ( $count >= 2 ) || ( $provider === 'gtranslate' && $count >= 1 );
+	if ( ! $run ) {
 		return;
 	}
-	$provider = aesir_get_language_switcher_provider();
 	?>
 	<script>
 	(function() {
 		var sel = document.getElementById('aesir-language-switcher');
 		if (!sel) return;
 		var provider = sel.getAttribute('data-provider');
+		var populateFromDom = sel.getAttribute('data-populate-from-dom') === '1';
 
 		function gtGetCookie(name) {
 			var c = document.cookie.split(';');
@@ -216,6 +246,38 @@ function aesir_language_switcher_script() {
 				if (p[0] === name) return p[1] ? decodeURIComponent(p[1]) : '';
 			}
 			return '';
+		}
+
+		// If we only had 1 option from PHP, try to copy from another GTranslate select on the page
+		if (populateFromDom && provider === 'gtranslate') {
+			var allSelects = document.querySelectorAll('select');
+			for (var i = 0; i < allSelects.length; i++) {
+				var s = allSelects[i];
+				if (s.id === 'aesir-language-switcher') continue;
+				var hasPair = false;
+				for (var j = 0; j < s.options.length; j++) {
+					if (s.options[j].value && s.options[j].value.indexOf('|') !== -1) {
+						hasPair = true;
+						break;
+					}
+				}
+				if (hasPair && s.options.length > 1) {
+					sel.innerHTML = '';
+					for (j = 0; j < s.options.length; j++) {
+						var opt = s.options[j];
+						if (!opt.value) continue;
+						var o = document.createElement('option');
+						o.value = opt.value;
+						o.textContent = opt.textContent || opt.innerText;
+						sel.appendChild(o);
+					}
+					var firstVal = sel.options[0] && sel.options[0].value;
+					if (firstVal && firstVal.indexOf('|') !== -1) {
+						sel.setAttribute('data-default-lang', firstVal.split('|')[0]);
+					}
+					break;
+				}
+			}
 		}
 
 		if (provider === 'gtranslate') {
