@@ -135,6 +135,30 @@ function aesir_get_order_by_order_number($order_number) {
 }
 
 /**
+ * Check if a WooCommerce order has a PayPal transaction/order ID from WooCommerce PayPal Payments (ppcp).
+ * Uses _transaction_id (capture ID) or _ppcp_paypal_order_id (PayPal order ID, e.g. 8N997098CW460981S).
+ *
+ * @param WC_Order $order
+ * @return bool
+ */
+function aesir_order_has_paypal_transaction_id($order) {
+    if (!$order || !is_callable([$order, 'get_payment_method'])) {
+        return false;
+    }
+    $method = $order->get_payment_method();
+    $is_paypal = $method && (strpos($method, 'paypal') !== false || $method === 'ppcp-gateway');
+    if (!$is_paypal) {
+        return false;
+    }
+    $txn_id = $order->get_transaction_id();
+    if ($txn_id && trim((string) $txn_id) !== '') {
+        return true;
+    }
+    $ppcp_order_id = $order->get_meta('_ppcp_paypal_order_id');
+    return $ppcp_order_id && trim((string) $ppcp_order_id) !== '';
+}
+
+/**
  * Handle Pancake order update webhook
  *
  * @param WP_REST_Request $request
@@ -165,6 +189,13 @@ function handle_pancake_order_update($request) {
         );
     }
 
+    
+	aesir_log(sprintf(
+        'Raw data receive via webhook: status %s',
+        $data
+    ));
+
+
     // Map Pancake status to WooCommerce status
     $status_map = [
         0  => 'pending',       // New
@@ -180,6 +211,24 @@ function handle_pancake_order_update($request) {
 
     $pancake_status = intval($data['status'] ?? 0);
     $wc_status = $status_map[$pancake_status] ?? 'processing';
+
+    // If current status or target wc_status is pending/on-hold/processing and order has PayPal transaction ID,
+    // treat as paid and set to completed.
+    $statuses_to_check = ['pending', 'on-hold', 'processing'];
+    $current_status = $order->get_status();
+    $current_or_target_incomplete = in_array($current_status, $statuses_to_check, true)
+        || in_array($wc_status, $statuses_to_check, true);
+
+    if ($current_or_target_incomplete && aesir_order_has_paypal_transaction_id($order)) {
+        $wc_status_original = $wc_status;
+        $wc_status = 'completed';
+        aesir_log(sprintf(
+            'Order %s: current %s / target was %s; has PayPal transaction/order ID; updating to completed',
+            $order->get_order_number(),
+            $current_status,
+            $wc_status_original
+        ));
+    }
 
     // Update order status
     $order->update_status($wc_status, 'Updated from Pancake webhook');
