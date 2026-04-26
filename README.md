@@ -58,6 +58,39 @@ define('PANCAKE_WEBHOOK_SECRET', 'your-webhook-secret');
 
 Used for: live stock by SKU on product pages, order sync to Pancake, webhook for order updates, and loyalty info on the My Account page.
 
+#### List all warehouses (Pancake Open API)
+
+Pancake documents **`GET /shops/{SHOP_ID}/warehouses`** on the production server **`https://pos.pages.fm/api/v1`**. Authenticate with the **`api_key`** query parameter (same key as `PANCAKE_API_KEY`). See [Pancake POS Open API](https://api-docs.pancake.vn/).
+
+Example (replace placeholders; do not commit real keys):
+
+```bash
+curl -sS -G "https://pos.pages.fm/api/v1/shops/YOUR_SHOP_ID/warehouses" \
+  --data-urlencode "api_key=YOUR_API_KEY" | python3 -m json.tool
+```
+
+A successful response includes `"success": true` and a **`data`** array. Each warehouse has at least **`id`** (UUID — use this for `PANCAKE_WAREHOUSE_ID`) and **`name`**. Other fields (address, phone, etc.) are returned as configured in Pancake.
+
+#### Warehouse reference (shop `1720099964`)
+
+Snapshot of warehouses returned by the API for this shop (names + IDs for `PANCAKE_WAREHOUSE_ID`). Regenerate with the curl command above if you add or rename warehouses in Pancake.
+
+| Name | `PANCAKE_WAREHOUSE_ID` (`id`) |
+|------|-------------------------------|
+| AESIR FLAGSHIP | `8e83507c-9e7d-45f6-a14f-695a857c0c38` |
+| AESIR SPACE | `6e63bb07-f0ed-4202-8be1-7aec37c38c30` |
+| VẠN PHÚC | `82aafbaf-0031-474c-8133-03e434df8092` |
+| Distressing Stock | `21e68b61-f898-4efc-bd4d-b93bf2d3a4ae` |
+| AESIR CASE | `a394520f-c6ca-4610-8688-13a1296c1421` |
+| AESIR WRITE-OFF | `c22f7a42-f932-4608-ae84-0258c9743875` |
+| AESIR - Sương | `deb8a879-bb5f-418b-a22f-5cac94387d34` |
+| WHOLESALE PA4 | `f1fd2c98-2a5d-4ae8-8273-6e0529a5c538` |
+| WHOLESALE BK1 | `18d5da95-0c3e-4898-94a8-132a3ca41bd1` |
+| WHOLESALE SI2 | `6c771441-52fd-4b8e-93c9-54e5b734a9f8` |
+| WHOLESALE PLOP SING3 | `c4552769-eca9-4a25-ad29-ffff0f09c33b` |
+| WHOLESALE TAIWAN | `26f090f1-95fa-4e09-9df9-59ad87f078fa` |
+| AESIR - AUS | `cedbf325-ee47-42ea-96cb-a0352d8cf79c` |
+
 ### Theme options
 
 If **Theme Options** is used (e.g. via a separate plugin or manual include of `functions/themes-option.php`), it provides:
