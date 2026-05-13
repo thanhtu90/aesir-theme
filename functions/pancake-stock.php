@@ -18,59 +18,21 @@ defined('ABSPATH') || exit;
 // ============================================================
 
 /**
- * Get stock quantity from Pancake POS by SKU
- * FIX PERF-001: Results are cached using WordPress Transients
- *
- * @param string $sku Product SKU
- * @param string|null $display_id Variation display ID
- * @param bool $force_refresh Force cache refresh
- * @return array|false Stock data or false on failure
+ * Transient key fragment so stock cache invalidates when PANCAKE_WAREHOUSE_ID changes.
  */
-function get_pancake_stock($sku, $display_id = null, $force_refresh = false) {
-    // Get credentials securely
+function aesir_pancake_stock_wh_cache_tag() {
     $credentials = aesir_get_pancake_credentials();
+    $wh = $credentials['warehouse_id'] ?? '';
 
-    if (empty($credentials['api_key']) || empty($credentials['shop_id'])) {
-        aesir_log('Pancake API credentials not configured');
-        return false;
-    }
+    return $wh !== '' ? md5($wh) : '_nowh';
+}
 
-    $api_key = $credentials['api_key'];
-    $shop_id = $credentials['shop_id'];
-    $warehouse_id = $credentials['warehouse_id'];
-    $base_url = 'https://pos.pages.fm/api/v1';
-
-    // Generate cache key
-    $cache_key = 'pancake_stock_' . md5($sku . '_' . ($display_id ?? 'null'));
-    $cache_ttl = defined('AESIR_STOCK_CACHE_TTL') ? AESIR_STOCK_CACHE_TTL : 300;
-
-    // Check cache first (unless force refresh)
-    if (!$force_refresh) {
-        $cached = get_transient($cache_key);
-        if ($cached !== false) {
-            return $cached;
-        }
-    }
-
-    // Store original values
-    $original_sku = $sku;
-    $original_display_id = $display_id;
-
-    // Auto-detect: If SKU contains dash and no display_id, split
-    if (($display_id === null || $display_id === '') && strpos($sku, '-') !== false) {
-        $parts = explode('-', $sku, 2);
-        $base_part = $parts[0];
-        $suffix_part = $parts[1] ?? '';
-
-        if (is_numeric($base_part) && $suffix_part !== '') {
-            $display_id = $sku;
-            $sku = $base_part;
-        }
-    }
-
-    $search_display_id = ($display_id !== null && $display_id !== '') ? (string)$display_id : null;
-
-    // Make API request
+/**
+ * Single-request fetch: product by SKU in Pancake, pick variation, resolve warehouse stock.
+ *
+ * @return array|false
+ */
+function aesir_pancake_fetch_product_stock($sku, $display_id, $api_key, $shop_id, $base_url, $warehouse_id) {
     $product_url = "{$base_url}/shops/{$shop_id}/products/" . urlencode($sku) . "?api_key={$api_key}";
 
     $response = wp_remote_get($product_url, [
@@ -80,16 +42,13 @@ function get_pancake_stock($sku, $display_id = null, $force_refresh = false) {
 
     if (is_wp_error($response)) {
         aesir_log('Pancake API Error', $response->get_error_message());
-        // Cache failure for shorter time to allow retry
-        set_transient($cache_key, false, 60);
+
         return false;
     }
 
     $data = json_decode(wp_remote_retrieve_body($response), true);
 
     if (empty($data['success']) || empty($data['data'])) {
-        // Cache "not found" result
-        set_transient($cache_key, false, 60);
         return false;
     }
 
@@ -97,33 +56,39 @@ function get_pancake_stock($sku, $display_id = null, $force_refresh = false) {
     $variations = $product['variations'] ?? [];
     $variation = null;
 
-    // Find matching variation
-    if ($search_display_id !== null) {
+    if ($display_id !== null && $display_id !== '') {
         foreach ($variations as $var) {
             $var_display_id = trim((string)($var['display_id'] ?? ''));
-            if ($var_display_id === trim($search_display_id)) {
+            if ($var_display_id === trim((string)$display_id)) {
                 $variation = $var;
                 break;
             }
         }
 
         if ($variation === null) {
-            set_transient($cache_key, false, 60);
             return false;
         }
     } else {
-        // Use first variation if no specific display_id
-        if (!empty($variations)) {
+        if (count($variations) === 1) {
             $variation = $variations[0];
+        } elseif (!empty($variations)) {
+            foreach ($variations as $var) {
+                $var_display_id = trim((string)($var['display_id'] ?? ''));
+                if ($var_display_id === $sku) {
+                    $variation = $var;
+                    break;
+                }
+            }
+            if ($variation === null) {
+                $variation = $variations[0];
+            }
         }
     }
 
     if ($variation === null) {
-        set_transient($cache_key, false, 60);
         return false;
     }
 
-    // Get warehouse-specific stock
     $stock = 0;
     $found_warehouse = false;
 
@@ -135,21 +100,121 @@ function get_pancake_stock($sku, $display_id = null, $force_refresh = false) {
         }
     }
 
-    // Fallback to total if warehouse not found
     if (!$found_warehouse) {
         $stock = (int)($variation['remain_quantity'] ?? 0);
     }
 
-    $result = [
+    return [
         'stock' => $stock,
         'product_name' => $product['name'] ?? '',
         'id' => $product['id'] ?? '',
         'variation_display_id' => $variation['display_id'] ?? '',
         'cached_at' => time(),
     ];
+}
 
-    // Cache successful result
-    set_transient($cache_key, $result, $cache_ttl);
+/**
+ * Get stock quantity from Pancake POS by SKU
+ * FIX PERF-001: Results are cached using WordPress Transients
+ * FIX: Cache keys include warehouse id so changing PANCAKE_WAREHOUSE_ID does not serve stale quantities.
+ * STRATEGY: Try full SKU as product id first; if not found and SKU contains "-", try base SKU + full SKU as display_id.
+ *
+ * @param string $sku Product SKU
+ * @param string|null $display_id Variation display ID
+ * @param bool $force_refresh Force cache refresh
+ * @return array|false Stock data or false on failure
+ */
+function get_pancake_stock($sku, $display_id = null, $force_refresh = false) {
+    $credentials = aesir_get_pancake_credentials();
+
+    if (empty($credentials['api_key']) || empty($credentials['shop_id'])) {
+        aesir_log('Pancake API credentials not configured');
+        return false;
+    }
+
+    $api_key = $credentials['api_key'];
+    $shop_id = $credentials['shop_id'];
+    $warehouse_id = $credentials['warehouse_id'];
+    $base_url = 'https://pos.pages.fm/api/v1';
+    $wh_tag = aesir_pancake_stock_wh_cache_tag();
+    $cache_ttl = defined('AESIR_STOCK_CACHE_TTL') ? AESIR_STOCK_CACHE_TTL : 300;
+
+    $cache_key = function ($s, $d) use ($wh_tag) {
+        return 'pancake_stock_' . md5($s . '_' . ($d ?? 'null') . '_' . $wh_tag);
+    };
+
+    if ($display_id === null || $display_id === '') {
+        if (!$force_refresh) {
+            $cached = get_transient($cache_key($sku, null));
+            if ($cached !== false) {
+                return $cached;
+            }
+        }
+
+        $result = aesir_pancake_fetch_product_stock($sku, null, $api_key, $shop_id, $base_url, $warehouse_id);
+
+        if ($result !== false) {
+            set_transient($cache_key($sku, null), $result, $cache_ttl);
+
+            return $result;
+        }
+
+        if (strpos($sku, '-') !== false) {
+            $parts = explode('-', $sku, 2);
+            $base_sku = $parts[0];
+            $variation_display_id = $sku;
+
+            if (!$force_refresh) {
+                $cached2 = get_transient($cache_key($base_sku, $variation_display_id));
+                if ($cached2 !== false) {
+                    return $cached2;
+                }
+            }
+
+            $result = aesir_pancake_fetch_product_stock(
+                $base_sku,
+                $variation_display_id,
+                $api_key,
+                $shop_id,
+                $base_url,
+                $warehouse_id
+            );
+
+            if ($result !== false) {
+                set_transient($cache_key($base_sku, $variation_display_id), $result, $cache_ttl);
+
+                return $result;
+            }
+        }
+
+        set_transient($cache_key($sku, null), false, 60);
+
+        return false;
+    }
+
+    $ck = $cache_key($sku, $display_id);
+
+    if (!$force_refresh) {
+        $cached = get_transient($ck);
+        if ($cached !== false) {
+            return $cached;
+        }
+    }
+
+    $result = aesir_pancake_fetch_product_stock(
+        $sku,
+        $display_id,
+        $api_key,
+        $shop_id,
+        $base_url,
+        $warehouse_id
+    );
+
+    if ($result !== false) {
+        set_transient($ck, $result, $cache_ttl);
+    } else {
+        set_transient($ck, false, 60);
+    }
 
     return $result;
 }
@@ -158,7 +223,8 @@ function get_pancake_stock($sku, $display_id = null, $force_refresh = false) {
  * Clear stock cache for a specific SKU
  */
 function aesir_clear_stock_cache($sku, $display_id = null) {
-    $cache_key = 'pancake_stock_' . md5($sku . '_' . ($display_id ?? 'null'));
+    $wh_tag = aesir_pancake_stock_wh_cache_tag();
+    $cache_key = 'pancake_stock_' . md5($sku . '_' . ($display_id ?? 'null') . '_' . $wh_tag);
     delete_transient($cache_key);
 }
 
@@ -166,7 +232,8 @@ function aesir_clear_stock_cache($sku, $display_id = null) {
  * Clear all product variations stock cache
  */
 function aesir_clear_product_stock_cache($product_id) {
-    delete_transient('product_variations_stock_' . $product_id);
+    $wh_tag = aesir_pancake_stock_wh_cache_tag();
+    delete_transient('product_variations_stock_' . $product_id . '_' . $wh_tag);
 
     $product = wc_get_product($product_id);
     if ($product && $product->is_type('variable')) {
@@ -239,8 +306,9 @@ function ajax_get_product_variations_stock() {
         return;
     }
 
-    // Check cache first
-    $cache_key = 'product_variations_stock_' . $product_id;
+    // Check cache first (warehouse-scoped so a warehouse switch does not reuse old aggregates)
+    $wh_tag = aesir_pancake_stock_wh_cache_tag();
+    $cache_key = 'product_variations_stock_' . $product_id . '_' . $wh_tag;
     $cache_ttl = defined('AESIR_STOCK_CACHE_TTL') ? AESIR_STOCK_CACHE_TTL : 300;
 
     $cached = get_transient($cache_key);

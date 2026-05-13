@@ -200,8 +200,11 @@ include_once get_template_directory() . '/functions/woo-custom.php';
 // Thank you card feature
 include_once get_template_directory() . '/functions/thankyou-card.php';
 
-// Pancake integrations (with caching)
-include_once get_template_directory() . '/functions/get-stock-pancake.php';      // Renamed & optimized
+// Pancake stock (wp-config credentials, transients; must load before product-page inline script)
+include_once get_template_directory() . '/functions/pancake-stock.php';
+
+// Pancake integrations — product UI scripts only (handlers live in pancake-stock.php)
+include_once get_template_directory() . '/functions/get-stock-pancake.php';
 include_once get_template_directory() . '/functions/pancake-loyalty.php';    // Renamed & optimized
 include_once get_template_directory() . '/functions/pancake-sync.php';
 include_once get_template_directory() . '/functions/pancake-webhook.php';    // Renamed from order-update.php
