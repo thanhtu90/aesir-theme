@@ -482,6 +482,21 @@ function aesir_validate_pancake_stock_before_checkout() {
 }
 
 // ============================================================
+// PRODUCT PAGE — stock line mount (below Add to cart, above wishlist)
+// ============================================================
+
+add_action('woocommerce_after_add_to_cart_button', function () {
+    if (!function_exists('is_product') || !is_product()) {
+        return;
+    }
+    global $product;
+    if (!$product || !$product->is_type('variable')) {
+        return;
+    }
+    echo '<div id="pancake-stock-info" class="aesir-pancake-stock-line" style="margin-top:10px;font-size:14px;color:#333;" aria-live="polite"></div>';
+}, 5);
+
+// ============================================================
 // CACHE INVALIDATION HOOKS
 // ============================================================
 

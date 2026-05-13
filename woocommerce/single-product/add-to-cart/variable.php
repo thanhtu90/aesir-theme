@@ -88,8 +88,6 @@ do_action( 'woocommerce_before_add_to_cart_form' ); ?>
 
 	<?php do_action( 'woocommerce_after_variations_form' ); ?>
 
-    <div id="pancake-stock-info" style="margin-top:10px; font-size:14px; color:#333;"></div>
-    
 </form>
 
 <?php
