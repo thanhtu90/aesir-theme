@@ -60,6 +60,17 @@ function mytheme_enqueue_styles() {
         [],
         filemtime(get_template_directory() . '/assets/css/output.css')
     );
+
+    // Variation row is flex without wrap — stock line must be full-width row; label/qty stack like legacy UI.
+    if (function_exists('is_product') && is_product()) {
+        wp_add_inline_style(
+            'tailwindcss',
+            '.single-product-right .woocommerce-variation-add-to-cart{flex-wrap:wrap!important;}'
+            . '.single-product-right .aesir-pancake-stock-line{display:block;width:100%;flex-basis:100%;flex-shrink:0;margin-top:10px;font-size:14px;color:#333;}'
+            . '.single-product-right .aesir-pancake-stock-line .aesir-pancake-stock-label{display:block;font-weight:700;}'
+            . '.single-product-right .aesir-pancake-stock-line .aesir-pancake-stock-qty{display:block;line-height:1.5;}'
+        );
+    }
 }
 add_action('wp_enqueue_scripts', 'mytheme_enqueue_styles');
 

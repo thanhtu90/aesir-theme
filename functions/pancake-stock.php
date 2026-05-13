@@ -493,7 +493,7 @@ add_action('woocommerce_after_add_to_cart_button', function () {
     if (!$product || !$product->is_type('variable')) {
         return;
     }
-    echo '<div id="pancake-stock-info" class="aesir-pancake-stock-line" style="margin-top:10px;font-size:14px;color:#333;" aria-live="polite"></div>';
+    echo '<div id="pancake-stock-info" class="aesir-pancake-stock-line" aria-live="polite"></div>';
 }, 5);
 
 // ============================================================

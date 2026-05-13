@@ -64,7 +64,6 @@
             $el = $('<div/>', {
                 id: 'pancake-stock-info',
                 class: 'aesir-pancake-stock-line',
-                css: { marginTop: '10px', fontSize: '14px', color: '#333' },
                 attr: { 'aria-live': 'polite' }
             });
             var $wrap = $form.find('.woocommerce-variation-add-to-cart').first();
@@ -183,8 +182,10 @@
                     .text('Add to cart');
             }
 
-            // Always show count after a successful Pancake lookup (warehouse totals often exceed 5).
-            stockInfo.html('<b>Available stock:</b> ' + n);
+            stockInfo.html(
+                '<span class="aesir-pancake-stock-label">Available stock:</span>' +
+                '<span class="aesir-pancake-stock-qty">' + n + '</span>'
+            );
         }
 
         function handleStockError(addBtn, stockInfo) {
