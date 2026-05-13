@@ -13,82 +13,164 @@
     // STOCK CHECKING (Single Product Page)
     // ============================================================
     $(function() {
-        var stockInfo = $('#pancake-stock-info');
         var pancakeStockCache = {};
         var pancakePending = {};
 
-        // When variation is found
-        $('form.variations_form').on('found_variation', function(e, variation) {
-            if (variation && variation.sku) {
-                var sku = variation.sku;
-                stockInfo.text('Checking stock...');
+        function mergeStockData(data, stockVal) {
+            return $.extend({}, data, { stock: stockVal });
+        }
 
-                var addBtn = $('form.variations_form').find('.single_add_to_cart_button');
-                addBtn.prop('disabled', true)
-                    .addClass('disabled loading')
-                    .css('opacity', '.5');
-
-                if (typeof addBtn.data('orig-text') === 'undefined') {
-                    addBtn.data('orig-text', addBtn.text());
-                }
-                addBtn.text('Checking...');
-
-                // Use cached result if available
-                if (pancakeStockCache.hasOwnProperty(sku)) {
-                    handleStockResult(pancakeStockCache[sku], addBtn, stockInfo);
-                    return;
-                }
-
-                // If request pending, wait for it
-                if (pancakePending[sku]) {
-                    pancakePending[sku].done(function(response) {
-                        if (response && response.success) {
-                            pancakeStockCache[sku] = response.data;
-                            handleStockResult(response.data, addBtn, stockInfo);
-                        } else {
-                            handleStockError(addBtn, stockInfo);
-                        }
-                    }).fail(function() {
-                        handleStockError(addBtn, stockInfo);
-                    });
-                    return;
-                }
-
-                // Make AJAX request
-                pancakePending[sku] = $.ajax({
-                    url: ajaxUrl,
-                    method: 'POST',
-                    data: {
-                        action: 'get_pancake_stock',
-                        sku: sku,
-                        display_id: null
+        /** Read variation array from form — jQuery .data() key differs by WC/jQuery version. */
+        function getProductVariations($form) {
+            var v = $form.data('product_variations');
+            if (!v) {
+                v = $form.data('productVariations');
+            }
+            if (!v) {
+                var raw = $form.attr('data-product_variations');
+                if (raw) {
+                    try {
+                        v = JSON.parse(raw);
+                    } catch (err) {
+                        v = null;
                     }
-                }).done(function(response) {
-                    delete pancakePending[sku];
+                }
+            }
+            return v && v.length ? v : null;
+        }
 
-                    if (response && response.success && response.data && response.data.stock !== undefined) {
-                        pancakeStockCache[sku] = response.data;
-                        handleStockResult(response.data, addBtn, stockInfo);
+        /** WooCommerce sometimes omits variation.sku; resolve from embedded variations data. */
+        function resolveVariationSku(variation, $form) {
+            var s = variation && variation.sku != null ? String(variation.sku).trim() : '';
+            if (s) return s;
+            var vid = variation && variation.variation_id;
+            if (!vid || !$form || !$form.length) return '';
+            var list = getProductVariations($form);
+            if (!list) return '';
+            for (var i = 0; i < list.length; i++) {
+                if (String(list[i].variation_id) === String(vid)) {
+                    var sk = list[i].sku != null ? String(list[i].sku).trim() : '';
+                    return sk || '';
+                }
+            }
+            return '';
+        }
+
+        function ensureStockInfo($form) {
+            var $el = $form.find('#pancake-stock-info');
+            if ($el.length) return $el;
+            $el = $('#pancake-stock-info');
+            if ($el.length) return $el;
+            $el = $('<div/>', {
+                id: 'pancake-stock-info',
+                class: 'aesir-pancake-stock-line',
+                css: { marginTop: '10px', fontSize: '14px', color: '#333' },
+                attr: { 'aria-live': 'polite' }
+            });
+            var $wrap = $form.find('.woocommerce-variation-add-to-cart').first();
+            if ($wrap.length) {
+                $wrap.append($el);
+            } else {
+                $form.append($el);
+            }
+            return $el;
+        }
+
+        function parseStockValue(data) {
+            if (!data || data.stock === undefined || data.stock === null) return NaN;
+            var v = data.stock;
+            if (typeof v === 'string') v = parseInt(v, 10);
+            var n = Number(v);
+            return isNaN(n) ? NaN : n;
+        }
+
+        /**
+         * WooCommerce fires found_variation before it replaces .single_variation HTML (see onFoundVariation + 300ms timeout).
+         * Our mount node from PHP was inside that block — it gets destroyed; stock updates never appear.
+         * show_variation runs on .single_variation after the new markup exists (and bubbles to the form).
+         */
+        $(document.body).on('show_variation', 'form.variations_form', function(e, variation, purchasable) {
+            var $form = $(this);
+            var stockInfo = ensureStockInfo($form);
+            var sku = resolveVariationSku(variation, $form);
+
+            if (!sku) {
+                stockInfo.text('');
+                return;
+            }
+
+            stockInfo.text('Checking stock...');
+
+            var addBtn = $form.find('.single_add_to_cart_button');
+            addBtn.prop('disabled', true)
+                .addClass('disabled loading')
+                .css('opacity', '.5');
+
+            if (typeof addBtn.data('orig-text') === 'undefined') {
+                addBtn.data('orig-text', addBtn.text());
+            }
+            addBtn.text('Checking...');
+
+            if (Object.prototype.hasOwnProperty.call(pancakeStockCache, sku)) {
+                handleStockResult(pancakeStockCache[sku], addBtn, stockInfo);
+                return;
+            }
+
+            if (pancakePending[sku]) {
+                pancakePending[sku].done(function(response) {
+                    var data = response && response.data;
+                    var n = parseStockValue(data || {});
+                    if (response && response.success && data && !isNaN(n)) {
+                        data = mergeStockData(data, n);
+                        pancakeStockCache[sku] = data;
+                        handleStockResult(data, addBtn, stockInfo);
                     } else {
-                        // Fallback: try base SKU
-                        tryFallbackSku(sku, addBtn, stockInfo);
+                        handleStockError(addBtn, stockInfo);
                     }
                 }).fail(function() {
-                    delete pancakePending[sku];
                     handleStockError(addBtn, stockInfo);
                 });
-            } else {
-                stockInfo.text('');
+                return;
             }
+
+            pancakePending[sku] = $.ajax({
+                url: ajaxUrl,
+                method: 'POST',
+                data: {
+                    action: 'get_pancake_stock',
+                    sku: sku
+                }
+            }).done(function(response) {
+                delete pancakePending[sku];
+
+                var data = response && response.data;
+                var n = parseStockValue(data || {});
+                if (response && response.success && data && !isNaN(n)) {
+                    data = mergeStockData(data, n);
+                    pancakeStockCache[sku] = data;
+                    handleStockResult(data, addBtn, stockInfo);
+                } else {
+                    tryFallbackSku(sku, addBtn, stockInfo);
+                }
+            }).fail(function() {
+                delete pancakePending[sku];
+                handleStockError(addBtn, stockInfo);
+            });
         });
 
-        // Reset on variation clear
-        $('form.variations_form').on('reset_data', function() {
-            stockInfo.text('');
+        $(document.body).on('reset_data', 'form.variations_form', function() {
+            $(this).find('#pancake-stock-info').text('');
+        });
+
+        $(document.body).on('hide_variation', 'form.variations_form', function() {
+            $(this).find('#pancake-stock-info').text('');
         });
 
         function handleStockResult(data, addBtn, stockInfo) {
-            if (data.stock <= 0) {
+            var n = parseStockValue(data);
+            if (isNaN(n)) n = 0;
+
+            if (n <= 0) {
                 addBtn.prop('disabled', true)
                     .addClass('disabled')
                     .removeClass('loading')
@@ -101,11 +183,8 @@
                     .text('Add to cart');
             }
 
-            if (data.stock > 0 && data.stock <= 5) {
-                stockInfo.html('<b>Available stock:</b> ' + data.stock);
-            } else {
-                stockInfo.text('');
-            }
+            // Always show count after a successful Pancake lookup (warehouse totals often exceed 5).
+            stockInfo.html('<b>Available stock:</b> ' + n);
         }
 
         function handleStockError(addBtn, stockInfo) {
@@ -130,9 +209,12 @@
                         display_id: sku
                     }
                 }).done(function(response) {
-                    if (response && response.success && response.data && response.data.stock !== undefined) {
-                        pancakeStockCache[sku] = response.data;
-                        handleStockResult(response.data, addBtn, stockInfo);
+                    var data = response && response.data;
+                    var n = parseStockValue(data || {});
+                    if (response && response.success && data && !isNaN(n)) {
+                        data = mergeStockData(data, n);
+                        pancakeStockCache[sku] = data;
+                        handleStockResult(data, addBtn, stockInfo);
                     } else {
                         handleStockError(addBtn, stockInfo);
                     }
