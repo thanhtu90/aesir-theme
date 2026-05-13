@@ -108,7 +108,7 @@ function mytheme_enqueue_scripts() {
             'aesir-product',
             get_template_directory_uri() . '/assets/js/product-page.js',
             ['jquery'],
-            '2.0',
+            filemtime(get_template_directory() . '/assets/js/product-page.js'),
             true
         );
 

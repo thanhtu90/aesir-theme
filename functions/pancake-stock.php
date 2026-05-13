@@ -268,15 +268,18 @@ function ajax_get_pancake_stock() {
         return;
     }
 
-    $sku = sanitize_text_field($_POST['sku'] ?? '');
-    $display_id = sanitize_text_field($_POST['display_id'] ?? '');
+    $sku = sanitize_text_field(wp_unslash($_POST['sku'] ?? ''));
+    $display_raw = isset($_POST['display_id']) ? wp_unslash($_POST['display_id']) : '';
+    $display_trim = is_string($display_raw) ? trim($display_raw) : '';
+    // jQuery may omit the field or send the literal string "null" — never treat that as a real display_id.
+    $display_id = ($display_trim === '' || strtolower($display_trim) === 'null') ? null : sanitize_text_field($display_raw);
 
     if (empty($sku)) {
         wp_send_json_error('No SKU provided');
         return;
     }
 
-    $result = get_pancake_stock($sku, $display_id ?: null);
+    $result = get_pancake_stock($sku, $display_id);
 
     if ($result === false) {
         wp_send_json_error('No stock data found');
