@@ -67,8 +67,7 @@ function mytheme_enqueue_styles() {
             'tailwindcss',
             '.single-product-right .woocommerce-variation-add-to-cart{flex-wrap:wrap!important;}'
             . '.single-product-right .aesir-pancake-stock-line{display:block;width:100%;flex-basis:100%;flex-shrink:0;margin-top:10px;font-size:14px;color:#333;}'
-            . '.single-product-right .aesir-pancake-stock-line .aesir-pancake-stock-label{display:block;font-weight:700;}'
-            . '.single-product-right .aesir-pancake-stock-line .aesir-pancake-stock-qty{display:block;line-height:1.5;}'
+            . '.single-product-right .aesir-pancake-stock-line .aesir-pancake-stock-text{display:inline;line-height:1.5;}'
         );
     }
 }

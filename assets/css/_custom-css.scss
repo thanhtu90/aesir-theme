@@ -116,17 +116,13 @@
   }
 }
 
-/* Pancake stock: full row below qty + add to cart (flex row would otherwise sit inline). */
+/* Pancake stock: full row below qty + add to cart; copy is one line. */
 .single-product-right .aesir-pancake-stock-line {
   @apply block w-full basis-full shrink-0 mt-2 text-sm text-[#333];
 }
 
-.single-product-right .aesir-pancake-stock-line .aesir-pancake-stock-label {
-  @apply block font-bold;
-}
-
-.single-product-right .aesir-pancake-stock-line .aesir-pancake-stock-qty {
-  @apply block leading-normal;
+.single-product-right .aesir-pancake-stock-line .aesir-pancake-stock-text {
+  @apply inline leading-normal;
 }
 
 .single-product-right .wpced-inner {

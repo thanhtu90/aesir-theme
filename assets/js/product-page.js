@@ -182,9 +182,9 @@
                     .text('Add to cart');
             }
 
+            // One line: "Available stock: N" (quantity inline with label).
             stockInfo.html(
-                '<span class="aesir-pancake-stock-label">Available stock:</span>' +
-                '<span class="aesir-pancake-stock-qty">' + n + '</span>'
+                '<span class="aesir-pancake-stock-text"><strong>Available stock:</strong> ' + n + '</span>'
             );
         }
 
