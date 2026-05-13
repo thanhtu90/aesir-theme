@@ -66,11 +66,16 @@
                 class: 'aesir-pancake-stock-line',
                 attr: { 'aria-live': 'polite' }
             });
-            var $wrap = $form.find('.woocommerce-variation-add-to-cart').first();
-            if ($wrap.length) {
-                $wrap.append($el);
+            var $atc = $form.find('.woocommerce-variation-add-to-cart').first();
+            if ($atc.length) {
+                $atc.after($el);
             } else {
-                $form.append($el);
+                var $sv = $form.find('.single_variation_wrap').first();
+                if ($sv.length) {
+                    $sv.append($el);
+                } else {
+                    $form.append($el);
+                }
             }
             return $el;
         }

@@ -485,7 +485,8 @@ function aesir_validate_pancake_stock_before_checkout() {
 // PRODUCT PAGE — stock line mount (below Add to cart, above wishlist)
 // ============================================================
 
-add_action('woocommerce_after_add_to_cart_button', function () {
+// After the flex row (.woocommerce-variation-add-to-cart), not inside it — keeps stock on its own line.
+add_action('woocommerce_after_single_variation', function () {
     if (!function_exists('is_product') || !is_product()) {
         return;
     }

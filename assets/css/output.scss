@@ -1555,11 +1555,11 @@ p{
   }
 }
 
-.single-product-right .aesir-pancake-stock-line{
+.single-product-right .single_variation_wrap .aesir-pancake-stock-line{
   display: block;
+  clear: both;
   width: 100%;
-  flex-basis: 100%;
-  flex-shrink: 0;
+  max-width: 100%;
   margin-top: 0.5rem;
   font-size: 0.875rem;
   line-height: 1.25rem;
@@ -1570,6 +1570,7 @@ p{
 .single-product-right .aesir-pancake-stock-line .aesir-pancake-stock-text{
   display: inline;
   line-height: 1.5;
+  white-space: nowrap;
 }
 
 .single-product-right .wpced-inner{
